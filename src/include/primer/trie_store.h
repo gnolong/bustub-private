@@ -17,8 +17,8 @@ class ValueGuard {
   auto operator*() const -> const T & { return value_; }
 
  private:
-  trie root_;
-  const t &value_;
+  Trie root_;
+  const T &value_;
 };
 
 // This class is a thread-safe wrapper around the Trie class. It provides a simple interface for
