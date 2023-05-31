@@ -1,6 +1,5 @@
 #pragma once
 
-
 #include <optional>
 #include <shared_mutex>
 #include <utility>
@@ -38,13 +37,14 @@ class TrieStore {
 
   // This function will remove the key-value pair from the trie.
   void Remove(std::string_view key);
+
  private:
   // This mutex protects the root. Everytime you want to access the trie root or modify it, you
   // will need to take this lock.
 
   std::mutex root_lock_;
   // This mutex sequences all writes operations and allows only one write operation at a time.
- 
+
   std::mutex write_lock_;
 
   // Stores the current root for the trie.
