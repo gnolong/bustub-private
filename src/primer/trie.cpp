@@ -90,7 +90,7 @@ auto Trie::Put(std::string_view key, T value) const -> Trie {
       // << std::endl;
       std::shared_ptr<TrieNode> tp = std::make_shared<TrieNodeWithValue<T>>(curnode->children_[key[i]]->children_,
                                                                             std::make_shared<T>(std::move(value)));
-      //无论是clone还是这里的新建都用到了TrieNode的构造函数，其中的std::move(children),move的是形参中拷贝的map。
+      // 无论是clone还是这里的新建都用到了TrieNode的构造函数，其中的std::move(children),move的是形参中拷贝的map。
       curnode->children_.erase(key[i]);
       curnode->children_.emplace(key[i], tp);
       // std::cout << *(std::dynamic_pointer_cast<const TrieNodeWithValue<T>>(curnode->children_[key[i]])->value_.get())
@@ -118,7 +118,6 @@ auto Trie::Remove(std::string_view key) const -> Trie {
   std::shared_ptr<TrieNode> prenode{nullptr};
   std::stack<std::shared_ptr<TrieNode>> st;
   std::stack<char> stchar;
-  // std::shared_ptr<TrieNode> gtp{nullptr};
   int i = 0;
   for (; i < len; i++) {
     if (prenode) {
