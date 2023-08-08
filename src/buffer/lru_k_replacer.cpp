@@ -12,6 +12,7 @@
 
 #include "buffer/lru_k_replacer.h"
 #include <cstddef>
+#include <mutex>
 #include "common/exception.h"
 
 namespace bustub {
@@ -19,6 +20,7 @@ namespace bustub {
 LRUKReplacer::LRUKReplacer(size_t num_frames, size_t k) : replacer_size_(num_frames), k_(k) {}
 
 auto LRUKReplacer::Evict(frame_id_t *frame_id) -> bool {
+    std::lock_guard<std::recursive_mutex> lock(latch_);
     auto r_ite = first_list_.rbegin();
     for(; r_ite != first_list_.rend(); r_ite++){
         if(r_ite->is_evictable_){
@@ -39,6 +41,7 @@ auto LRUKReplacer::Evict(frame_id_t *frame_id) -> bool {
 }
 
 void LRUKReplacer::RecordAccess(frame_id_t frame_id, [[maybe_unused]] AccessType access_type) {
+    std::lock_guard<std::recursive_mutex> lock(latch_);
     ++current_timestamp_;
     auto ite = node_store_.find(frame_id);
     if(node_store_.end() == ite){
@@ -72,6 +75,7 @@ void LRUKReplacer::RecordAccess(frame_id_t frame_id, [[maybe_unused]] AccessType
 }
 
 void LRUKReplacer::SetEvictable(frame_id_t frame_id, bool set_evictable) {
+    std::lock_guard<std::recursive_mutex> lock(latch_);
     auto ite = node_store_.find(frame_id)->second;
     if(ite->is_evictable_ == set_evictable){
         return;
@@ -86,6 +90,7 @@ void LRUKReplacer::SetEvictable(frame_id_t frame_id, bool set_evictable) {
 }
 
 void LRUKReplacer::Remove(frame_id_t frame_id) {
+    std::lock_guard<std::recursive_mutex> lock(latch_);
     auto ite = node_store_.find(frame_id); 
     if(ite == node_store_.end()){
         return;
@@ -106,6 +111,7 @@ void LRUKReplacer::Remove(frame_id_t frame_id) {
 }
 
 auto LRUKReplacer::Size() -> size_t {
+    std::lock_guard<std::recursive_mutex> lock(latch_);
     return curr_evitc_size_;
 }
 
