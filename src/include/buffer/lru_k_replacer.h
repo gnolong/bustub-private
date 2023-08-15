@@ -35,9 +35,7 @@ class LRUKNode {
   size_t k_{};
   frame_id_t fid_;
   bool is_evictable_{false};
-  LRUKNode(frame_id_t frame_id, size_t timestamp): k_(1), fid_(frame_id){
-    history_.emplace_front(timestamp);
-  }
+  LRUKNode(frame_id_t frame_id, size_t timestamp) : k_(1), fid_(frame_id) { history_.emplace_front(timestamp); }
 };
 
 /**
@@ -155,7 +153,7 @@ class LRUKReplacer {
   // TODO(student): implement me! You can replace these member variables as you like.
   // Remove maybe_unused if you start using them.
   std::unordered_map<frame_id_t, std::list<LRUKNode>::iterator> node_store_;
-  //这里我使用迭代器如果是其它顺序容器可能失效
+  // 这里我使用迭代器如果是其它顺序容器可能失效
   std::list<LRUKNode> second_list_;
   std::list<LRUKNode> first_list_;
   size_t current_timestamp_{0};
