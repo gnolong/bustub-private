@@ -20,7 +20,7 @@ namespace bustub {
 LRUKReplacer::LRUKReplacer(size_t num_frames, size_t k) : replacer_size_(num_frames), k_(k) {}
 
 auto LRUKReplacer::Evict(frame_id_t *frame_id) -> bool {
-  if(0 == Size()){
+  if (0 == Size()) {
     return false;
   }
   std::lock_guard<std::recursive_mutex> lock(latch_);

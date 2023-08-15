@@ -148,7 +148,9 @@ auto BufferPoolManager::UnpinPage(page_id_t page_id, bool is_dirty, [[maybe_unus
   Page *ppage = pages_ + ite->second;
   // ppage->WLatch();
   --(ppage->pin_count_);
-  ppage->is_dirty_ = is_dirty;
+  if (!ppage->IsDirty()) {  // if already dirty, do not change it
+    ppage->is_dirty_ = is_dirty;
+  }
   if (0 >= ppage->pin_count_) {
     replacer_->SetEvictable(ite->second, true);
   }
