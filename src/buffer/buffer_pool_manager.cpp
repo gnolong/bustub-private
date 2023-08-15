@@ -37,6 +37,7 @@ BufferPoolManager::BufferPoolManager(size_t pool_size, DiskManager *disk_manager
   // Initially, every page is in the free list.
   for (size_t i = 0; i < pool_size_; ++i) {
     free_list_.emplace_back(static_cast<int>(i));
+    (pages_ + i)->ResetMemory();
   }
 }
 
@@ -51,7 +52,7 @@ auto BufferPoolManager::NewPage(page_id_t *page_id) -> Page * {
     Page *ppage = pages_ + num_free;
     // ppage->WLatch();
     ppage->page_id_ = paid;
-    ppage->ResetMemory();
+    // ppage->ResetMemory();
     ppage->is_dirty_ = true;
     ++((ppage)->pin_count_);
     // ppage->WUnlatch();
@@ -100,7 +101,7 @@ auto BufferPoolManager::FetchPage(page_id_t page_id, [[maybe_unused]] AccessType
     auto num_free = free_list_.back();
     Page *ppage = pages_ + num_free;
     // ppage->WLatch();
-    ppage->ResetMemory();
+    // ppage->ResetMemory();
     disk_manager_->ReadPage(page_id, (ppage)->data_);
     ppage->page_id_ = page_id;
     ++((ppage)->pin_count_);
@@ -163,15 +164,16 @@ auto BufferPoolManager::FlushPage(page_id_t page_id) -> bool {
     return false;
   }
   auto fid = ite->second;
-  replacer_->Remove(fid);
-  free_list_.push_front(fid);
-  page_table_.erase(ite);
+  // replacer_->Remove(fid);
+  // free_list_.push_front(fid);
+  // page_table_.erase(ite);
   Page *ppage = pages_ + fid;
   // ppage->WLatch();
   disk_manager_->WritePage(page_id, ppage->data_);
-  ppage->ResetMemory();
-  ppage->page_id_ = INVALID_PAGE_ID;
-  ppage->is_dirty_ = false;
+  // ppage->ResetMemory();
+  // ppage->page_id_ = INVALID_PAGE_ID;
+  // ppage->pin_count_ = 0;
+  // ppage->is_dirty_ = false;
   // ppage->WUnlatch();
   return true;
 }
@@ -180,15 +182,16 @@ void BufferPoolManager::FlushAllPages() {
   std::scoped_lock<std::mutex> lock(latch_);
   for (auto pair : page_table_) {
     auto fid = pair.second;
-    replacer_->Remove(fid);
-    free_list_.push_front(fid);
-    page_table_.erase(page_table_.find(pair.first));
+    // replacer_->Remove(fid);
+    // free_list_.push_front(fid);
+    // page_table_.erase(page_table_.find(pair.first));
     Page *ppage = pages_ + fid;
     // ppage->WLatch();
     disk_manager_->WritePage(pair.first, ppage->data_);
-    ppage->ResetMemory();
-    ppage->page_id_ = INVALID_PAGE_ID;
-    ppage->is_dirty_ = false;
+    // ppage->ResetMemory();
+    // ppage->page_id_ = INVALID_PAGE_ID;
+    // ppage->pin_count_ = 0;
+    // ppage->is_dirty_ = false;
     // ppage->WUnlatch();
   }
 }
