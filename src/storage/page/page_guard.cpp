@@ -22,6 +22,7 @@ void BasicPageGuard::Drop() {
 }
 
 auto BasicPageGuard::operator=(BasicPageGuard &&that) noexcept -> BasicPageGuard & {
+  this->Drop();
   this->bpm_ = that.bpm_;
   that.bpm_ = nullptr;
   this->page_ = that.page_;
@@ -43,6 +44,7 @@ BasicPageGuard::~BasicPageGuard() {
 ReadPageGuard::ReadPageGuard(ReadPageGuard &&that) noexcept { this->guard_ = std::move(that.guard_); }
 
 auto ReadPageGuard::operator=(ReadPageGuard &&that) noexcept -> ReadPageGuard & {
+  this->Drop();
   this->guard_ = std::move(that.guard_);
   return *this;
 }
@@ -50,8 +52,8 @@ auto ReadPageGuard::operator=(ReadPageGuard &&that) noexcept -> ReadPageGuard & 
 void ReadPageGuard::Drop() {
   if (guard_.bpm_ != nullptr && guard_.page_ != nullptr) {
     guard_.bpm_->UnpinPage(guard_.page_->GetPageId(), guard_.is_dirty_);
+    guard_.page_->RUnlatch();
   }
-  guard_.page_->RUnlatch();
   guard_.bpm_ = nullptr;
   guard_.page_ = nullptr;
   guard_.is_dirty_ = false;
@@ -60,8 +62,8 @@ void ReadPageGuard::Drop() {
 ReadPageGuard::~ReadPageGuard() {
   if (guard_.bpm_ != nullptr && guard_.page_ != nullptr) {
     guard_.bpm_->UnpinPage(guard_.page_->GetPageId(), guard_.is_dirty_);
+    guard_.page_->RUnlatch();
   }
-  guard_.page_->RUnlatch();
   guard_.bpm_ = nullptr;
   guard_.page_ = nullptr;
   guard_.is_dirty_ = false;
@@ -70,6 +72,7 @@ ReadPageGuard::~ReadPageGuard() {
 WritePageGuard::WritePageGuard(WritePageGuard &&that) noexcept { this->guard_ = std::move(that.guard_); }
 
 auto WritePageGuard::operator=(WritePageGuard &&that) noexcept -> WritePageGuard & {
+  this->Drop();
   this->guard_ = std::move(that.guard_);
   return *this;
 }
@@ -77,8 +80,8 @@ auto WritePageGuard::operator=(WritePageGuard &&that) noexcept -> WritePageGuard
 void WritePageGuard::Drop() {
   if (guard_.bpm_ != nullptr && guard_.page_ != nullptr) {
     guard_.bpm_->UnpinPage(guard_.page_->GetPageId(), guard_.is_dirty_);
+    guard_.page_->WUnlatch();
   }
-  guard_.page_->WUnlatch();
   guard_.bpm_ = nullptr;
   guard_.page_ = nullptr;
   guard_.is_dirty_ = false;
@@ -87,8 +90,8 @@ void WritePageGuard::Drop() {
 WritePageGuard::~WritePageGuard() {
   if (guard_.bpm_ != nullptr && guard_.page_ != nullptr) {
     guard_.bpm_->UnpinPage(guard_.page_->GetPageId(), guard_.is_dirty_);
+    guard_.page_->WUnlatch();
   }
-  guard_.page_->WUnlatch();
   guard_.bpm_ = nullptr;
   guard_.page_ = nullptr;
   guard_.is_dirty_ = false;

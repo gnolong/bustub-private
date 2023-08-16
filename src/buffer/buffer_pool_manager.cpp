@@ -53,7 +53,7 @@ auto BufferPoolManager::NewPage(page_id_t *page_id) -> Page * {
     // ppage->WLatch();
     ppage->page_id_ = paid;
     // ppage->ResetMemory();
-    ppage->is_dirty_ = true;
+    // ppage->is_dirty_ = true;
     ++((ppage)->pin_count_);
     // ppage->WUnlatch();
     free_list_.pop_back();
@@ -78,9 +78,10 @@ auto BufferPoolManager::NewPage(page_id_t *page_id) -> Page * {
   // ppage->WLatch();
   if (ppage->is_dirty_) {
     disk_manager_->WritePage(ppage->page_id_, ppage->data_);
+    ppage->is_dirty_ = false;
   }
   ppage->ResetMemory();
-  ppage->is_dirty_ = true;
+  // ppage->is_dirty_ = true;
   ppage->page_id_ = paid;
   ++((ppage)->pin_count_);
   // ppage->WUnlatch();
@@ -95,7 +96,9 @@ auto BufferPoolManager::FetchPage(page_id_t page_id, [[maybe_unused]] AccessType
   std::scoped_lock<std::mutex> lock(latch_);
   auto ite = page_table_.find(page_id);
   if (page_table_.end() != ite) {
-    ++(pages_[ite->second].pin_count_);
+    if (1 == ++(pages_[ite->second].pin_count_)) {
+      replacer_->SetEvictable(ite->second, false);
+    }
     return pages_ + ite->second;
   }
   if (!free_list_.empty()) {
