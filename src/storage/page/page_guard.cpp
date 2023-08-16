@@ -65,7 +65,6 @@ ReadPageGuard::~ReadPageGuard() {
   guard_.bpm_ = nullptr;
   guard_.page_ = nullptr;
   guard_.is_dirty_ = false;
-
 }  // NOLINT
 
 WritePageGuard::WritePageGuard(WritePageGuard &&that) noexcept { this->guard_ = std::move(that.guard_); }
