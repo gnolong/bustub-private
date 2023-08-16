@@ -41,9 +41,8 @@ auto ReadPageGuard::operator=(ReadPageGuard &&that) noexcept -> ReadPageGuard & 
 }
 
 void ReadPageGuard::Drop() {
-  guard_.page_->WLatch();
   guard_.Drop();
-  guard_.page_->WUnlatch();
+  guard_.page_->RUnlatch();
 }
 
 ReadPageGuard::~ReadPageGuard() {}  // NOLINT
@@ -56,7 +55,6 @@ auto WritePageGuard::operator=(WritePageGuard &&that) noexcept -> WritePageGuard
 }
 
 void WritePageGuard::Drop() {
-  guard_.page_->WLatch();
   guard_.Drop();
   guard_.page_->WUnlatch();
 }

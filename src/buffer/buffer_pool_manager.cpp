@@ -228,9 +228,17 @@ auto BufferPoolManager::AllocatePage() -> page_id_t { return next_page_id_++; }
 
 auto BufferPoolManager::FetchPageBasic(page_id_t page_id) -> BasicPageGuard { return {this, FetchPage(page_id)}; }
 
-auto BufferPoolManager::FetchPageRead(page_id_t page_id) -> ReadPageGuard { return {this, FetchPage(page_id)}; }
+auto BufferPoolManager::FetchPageRead(page_id_t page_id) -> ReadPageGuard {
+  Page *ppage = FetchPage(page_id);
+  ppage->RLatch();
+  return {this, ppage};
+}
 
-auto BufferPoolManager::FetchPageWrite(page_id_t page_id) -> WritePageGuard { return {this, FetchPage(page_id)}; }
+auto BufferPoolManager::FetchPageWrite(page_id_t page_id) -> WritePageGuard {
+  Page *ppage = FetchPage(page_id);
+  ppage->WLatch();
+  return {this, ppage};
+}
 
 auto BufferPoolManager::NewPageGuarded(page_id_t *page_id) -> BasicPageGuard { return {this, NewPage(page_id)}; }
 
