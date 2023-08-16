@@ -31,7 +31,14 @@ auto BasicPageGuard::operator=(BasicPageGuard &&that) noexcept -> BasicPageGuard
   return *this;
 }
 
-BasicPageGuard::~BasicPageGuard(){};  // NOLINT
+BasicPageGuard::~BasicPageGuard() {
+  if (bpm_ != nullptr && page_ != nullptr) {
+    bpm_->UnpinPage(page_->GetPageId(), is_dirty_);
+  }
+  bpm_ = nullptr;
+  page_ = nullptr;
+  is_dirty_ = false;
+};  // NOLINT
 
 ReadPageGuard::ReadPageGuard(ReadPageGuard &&that) noexcept { this->guard_ = std::move(that.guard_); }
 
@@ -41,11 +48,25 @@ auto ReadPageGuard::operator=(ReadPageGuard &&that) noexcept -> ReadPageGuard & 
 }
 
 void ReadPageGuard::Drop() {
-  guard_.Drop();
+  if (guard_.bpm_ != nullptr && guard_.page_ != nullptr) {
+    guard_.bpm_->UnpinPage(guard_.page_->GetPageId(), guard_.is_dirty_);
+  }
   guard_.page_->RUnlatch();
+  guard_.bpm_ = nullptr;
+  guard_.page_ = nullptr;
+  guard_.is_dirty_ = false;
 }
 
-ReadPageGuard::~ReadPageGuard() {}  // NOLINT
+ReadPageGuard::~ReadPageGuard() {
+  if (guard_.bpm_ != nullptr && guard_.page_ != nullptr) {
+    guard_.bpm_->UnpinPage(guard_.page_->GetPageId(), guard_.is_dirty_);
+  }
+  guard_.page_->RUnlatch();
+  guard_.bpm_ = nullptr;
+  guard_.page_ = nullptr;
+  guard_.is_dirty_ = false;
+
+}  // NOLINT
 
 WritePageGuard::WritePageGuard(WritePageGuard &&that) noexcept { this->guard_ = std::move(that.guard_); }
 
@@ -55,10 +76,23 @@ auto WritePageGuard::operator=(WritePageGuard &&that) noexcept -> WritePageGuard
 }
 
 void WritePageGuard::Drop() {
-  guard_.Drop();
+  if (guard_.bpm_ != nullptr && guard_.page_ != nullptr) {
+    guard_.bpm_->UnpinPage(guard_.page_->GetPageId(), guard_.is_dirty_);
+  }
   guard_.page_->WUnlatch();
+  guard_.bpm_ = nullptr;
+  guard_.page_ = nullptr;
+  guard_.is_dirty_ = false;
 }
 
-WritePageGuard::~WritePageGuard() {}  // NOLINT
+WritePageGuard::~WritePageGuard() {
+  if (guard_.bpm_ != nullptr && guard_.page_ != nullptr) {
+    guard_.bpm_->UnpinPage(guard_.page_->GetPageId(), guard_.is_dirty_);
+  }
+  guard_.page_->WUnlatch();
+  guard_.bpm_ = nullptr;
+  guard_.page_ = nullptr;
+  guard_.is_dirty_ = false;
+}  // NOLINT
 
 }  // namespace bustub

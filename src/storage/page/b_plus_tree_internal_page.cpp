@@ -33,8 +33,10 @@ void B_PLUS_TREE_INTERNAL_PAGE_TYPE::Init(int max_size) { BPlusTreePage::SetMaxS
 INDEX_TEMPLATE_ARGUMENTS
 auto B_PLUS_TREE_INTERNAL_PAGE_TYPE::KeyAt(int index) const -> KeyType {
   // replace with your own code
-  KeyType key{};
-  return key;
+  // if(0 != index){
+  //   return *(array_ + index);
+  // }
+  return KeyType{};
 }
 
 INDEX_TEMPLATE_ARGUMENTS
