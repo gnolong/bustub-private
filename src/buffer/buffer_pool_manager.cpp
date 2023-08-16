@@ -95,6 +95,7 @@ auto BufferPoolManager::FetchPage(page_id_t page_id, [[maybe_unused]] AccessType
   std::scoped_lock<std::mutex> lock(latch_);
   auto ite = page_table_.find(page_id);
   if (page_table_.end() != ite) {
+    ++(pages_[ite->second].pin_count_);
     return pages_ + ite->second;
   }
   if (!free_list_.empty()) {
