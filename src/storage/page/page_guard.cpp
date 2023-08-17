@@ -13,7 +13,7 @@ BasicPageGuard::BasicPageGuard(BasicPageGuard &&that) noexcept {
 }
 
 void BasicPageGuard::Drop() {
-  if (bpm_ != nullptr && page_ != nullptr) {
+  if (bpm_ != nullptr && page_ != nullptr) {  // avoid double unpin in destroy func
     bpm_->UnpinPage(page_->GetPageId(), is_dirty_);
   }
   bpm_ = nullptr;
@@ -22,7 +22,7 @@ void BasicPageGuard::Drop() {
 }
 
 auto BasicPageGuard::operator=(BasicPageGuard &&that) noexcept -> BasicPageGuard & {
-  this->Drop();
+  this->Drop();  // do not forget drop old pageguard
   this->bpm_ = that.bpm_;
   that.bpm_ = nullptr;
   this->page_ = that.page_;

@@ -37,7 +37,7 @@ BufferPoolManager::BufferPoolManager(size_t pool_size, DiskManager *disk_manager
   // Initially, every page is in the free list.
   for (size_t i = 0; i < pool_size_; ++i) {
     free_list_.emplace_back(static_cast<int>(i));
-    (pages_ + i)->ResetMemory();
+    (pages_ + i)->ResetMemory();  // better to resetmemory
   }
 }
 
@@ -45,6 +45,7 @@ BufferPoolManager::~BufferPoolManager() { delete[] pages_; }
 
 auto BufferPoolManager::NewPage(page_id_t *page_id) -> Page * {
   std::scoped_lock<std::mutex> lock(latch_);
+  // do not set dirty flag
   page_id_t paid;
   if (!free_list_.empty()) {
     paid = AllocatePage();
@@ -53,7 +54,6 @@ auto BufferPoolManager::NewPage(page_id_t *page_id) -> Page * {
     // ppage->WLatch();
     ppage->page_id_ = paid;
     // ppage->ResetMemory();
-    // ppage->is_dirty_ = true;
     ++((ppage)->pin_count_);
     // ppage->WUnlatch();
     free_list_.pop_back();
@@ -81,7 +81,6 @@ auto BufferPoolManager::NewPage(page_id_t *page_id) -> Page * {
     ppage->is_dirty_ = false;
   }
   ppage->ResetMemory();
-  // ppage->is_dirty_ = true;
   ppage->page_id_ = paid;
   ++((ppage)->pin_count_);
   // ppage->WUnlatch();
@@ -96,7 +95,7 @@ auto BufferPoolManager::FetchPage(page_id_t page_id, [[maybe_unused]] AccessType
   std::scoped_lock<std::mutex> lock(latch_);
   auto ite = page_table_.find(page_id);
   if (page_table_.end() != ite) {
-    if (1 == ++(pages_[ite->second].pin_count_)) {
+    if (1 == ++(pages_[ite->second].pin_count_)) {  // important to inc pin count and check to find unpin page
       replacer_->SetEvictable(ite->second, false);
     }
     return pages_ + ite->second;
@@ -163,24 +162,15 @@ auto BufferPoolManager::UnpinPage(page_id_t page_id, bool is_dirty, [[maybe_unus
 }
 
 auto BufferPoolManager::FlushPage(page_id_t page_id) -> bool {
-  std::scoped_lock<std::mutex> lock(latch_);
+  std::scoped_lock<std::mutex> lock(latch_);  // just wirte page back to disk
   auto ite = page_table_.find(page_id);
   if (page_table_.end() == ite) {
     throw Exception("no page to be flushed");
     return false;
   }
   auto fid = ite->second;
-  // replacer_->Remove(fid);
-  // free_list_.push_front(fid);
-  // page_table_.erase(ite);
   Page *ppage = pages_ + fid;
-  // ppage->WLatch();
   disk_manager_->WritePage(page_id, ppage->data_);
-  // ppage->ResetMemory();
-  // ppage->page_id_ = INVALID_PAGE_ID;
-  // ppage->pin_count_ = 0;
-  // ppage->is_dirty_ = false;
-  // ppage->WUnlatch();
   return true;
 }
 
@@ -188,17 +178,8 @@ void BufferPoolManager::FlushAllPages() {
   std::scoped_lock<std::mutex> lock(latch_);
   for (auto pair : page_table_) {
     auto fid = pair.second;
-    // replacer_->Remove(fid);
-    // free_list_.push_front(fid);
-    // page_table_.erase(page_table_.find(pair.first));
     Page *ppage = pages_ + fid;
-    // ppage->WLatch();
     disk_manager_->WritePage(pair.first, ppage->data_);
-    // ppage->ResetMemory();
-    // ppage->page_id_ = INVALID_PAGE_ID;
-    // ppage->pin_count_ = 0;
-    // ppage->is_dirty_ = false;
-    // ppage->WUnlatch();
   }
 }
 
@@ -233,7 +214,7 @@ auto BufferPoolManager::FetchPageBasic(page_id_t page_id) -> BasicPageGuard { re
 
 auto BufferPoolManager::FetchPageRead(page_id_t page_id) -> ReadPageGuard {
   Page *ppage = FetchPage(page_id);
-  ppage->RLatch();
+  ppage->RLatch();  // reader lock and unlock in readpageguard's drop() and destroy func
   return {this, ppage};
 }
 
