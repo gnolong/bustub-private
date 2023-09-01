@@ -1,10 +1,14 @@
 #include <sstream>
 #include <string>
 
+#include "common/config.h"
 #include "common/exception.h"
 #include "common/logger.h"
 #include "common/rid.h"
 #include "storage/index/b_plus_tree.h"
+#include "storage/page/b_plus_tree_header_page.h"
+#include "storage/page/b_plus_tree_page.h"
+#include "storage/page/page_guard.h"
 
 namespace bustub {
 
@@ -26,7 +30,16 @@ BPLUSTREE_TYPE::BPlusTree(std::string name, page_id_t header_page_id, BufferPool
  * Helper function to decide whether current b+tree is empty
  */
 INDEX_TEMPLATE_ARGUMENTS
-auto BPLUSTREE_TYPE::IsEmpty() const -> bool { return true; }
+auto BPLUSTREE_TYPE::IsEmpty() const -> bool {
+  ReadPageGuard guard = bpm_->FetchPageRead(header_page_id_);
+  auto root_page = guard.As<BPlusTreeHeaderPage>();
+  if(INVALID_PAGE_ID == root_page->root_page_id_){
+    return true;
+  }
+  guard = bpm_->FetchPageRead(root_page->root_page_id_);
+  auto ppage = guard.As<InternalPage>();
+  return 0 == ppage->GetSize();
+}
 /*****************************************************************************
  * SEARCH
  *****************************************************************************/
@@ -38,8 +51,40 @@ auto BPLUSTREE_TYPE::IsEmpty() const -> bool { return true; }
 INDEX_TEMPLATE_ARGUMENTS
 auto BPLUSTREE_TYPE::GetValue(const KeyType &key, std::vector<ValueType> *result, Transaction *txn) -> bool {
   // Declaration of context instance.
-  Context ctx;
-  (void)ctx;
+  // Context ctx;
+  // (void)ctx;
+  ReadPageGuard guard = bpm_->FetchPageRead(header_page_id_);
+  auto root_page = guard.As<BPlusTreeHeaderPage>();
+  if(INVALID_PAGE_ID == root_page->root_page_id_){
+    return false;
+  }
+  guard = bpm_->FetchPageRead(root_page->root_page_id_);
+  auto ppage = guard.As<InternalPage>();
+  if(0 == ppage->GetSize()){
+    return false;
+  }
+  do{
+    auto cursize = ppage->GetSize();
+    bool find_flag = false;
+    for(int i = 1; i < cursize; ++i){
+      if(0 >= comparator_(key,ppage->KeyAt(i))){
+        guard = bpm_->FetchPageRead(ppage->ValueAt(i-1));
+        find_flag = true;
+        break;
+      }
+    }
+    if(!find_flag){
+      return false;
+    }
+    ppage = guard.As<InternalPage>();
+  }while(!ppage->IsLeafPage());
+  auto ppage_leaf = std::reinterpret_cast<LeafPage*>(ppage);
+  auto cursize = ppage_leaf->GetSize();
+  for(int i = 0; i < cursize; ++i){
+    if(0 == comparator_(key,ppage_leaf->KeyAt(i))){
+      result->emplace(ppage->valueg)
+    }
+  }
   return false;
 }
 
@@ -58,6 +103,18 @@ auto BPLUSTREE_TYPE::Insert(const KeyType &key, const ValueType &value, Transact
   // Declaration of context instance.
   Context ctx;
   (void)ctx;
+  // if(IsEmpty()){
+  //   page_id_t page_id = INVALID_PAGE_ID;
+  //   auto guard = bpm_->NewPageGuarded(&page_id);
+  // }
+  ReadPageGuard guard = bpm_->FetchPageRead(header_page_id_);
+  auto root_page = guard.As<BPlusTreeHeaderPage>();
+  if(INVALID_PAGE_ID == root_page->root_page_id_){
+    return true;
+  }
+  guard = bpm_->FetchPageRead(root_page->root_page_id_);
+  auto ppage = guard.As<InternalPage>();
+  return 0 == ppage->GetSize();
   return false;
 }
 
