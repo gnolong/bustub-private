@@ -1,3 +1,4 @@
+#include <cstring>
 #include <sstream>
 #include <string>
 
@@ -74,15 +75,16 @@ auto BPLUSTREE_TYPE::GetValue(const KeyType &key, std::vector<ValueType> *result
       }
     }
     if(!find_flag){
-      return false;
+      guard = bpm_->FetchPageRead(ppage->ValueAt(cursize-1));
     }
     ppage = guard.As<InternalPage>();
   }while(!ppage->IsLeafPage());
-  auto ppage_leaf = std::reinterpret_cast<LeafPage*>(ppage);
+  auto ppage_leaf = reinterpret_cast<const LeafPage*>(ppage);
   auto cursize = ppage_leaf->GetSize();
   for(int i = 0; i < cursize; ++i){
     if(0 == comparator_(key,ppage_leaf->KeyAt(i))){
-      result->emplace(ppage->valueg)
+      result->emplace_back(ppage_leaf->ValueAt(i));
+      return true;
     }
   }
   return false;
@@ -107,14 +109,18 @@ auto BPLUSTREE_TYPE::Insert(const KeyType &key, const ValueType &value, Transact
   //   page_id_t page_id = INVALID_PAGE_ID;
   //   auto guard = bpm_->NewPageGuarded(&page_id);
   // }
-  ReadPageGuard guard = bpm_->FetchPageRead(header_page_id_);
-  auto root_page = guard.As<BPlusTreeHeaderPage>();
+  auto wguard = bpm_->FetchPageWrite(header_page_id_);
+  auto root_page = wguard.AsMut<BPlusTreeHeaderPage>();
   if(INVALID_PAGE_ID == root_page->root_page_id_){
-    return true;
+    page_id_t page_id = INVALID_PAGE_ID;
+    auto bguard = bpm_->NewPageGuarded(&page_id);
+    root_page->root_page_id_ = page_id;
   }
-  guard = bpm_->FetchPageRead(root_page->root_page_id_);
-  auto ppage = guard.As<InternalPage>();
-  return 0 == ppage->GetSize();
+  wguard = bpm_->FetchPageWrite(root_page->root_page_id_);
+  auto ppage = wguard.AsMut<InternalPage>();
+  if(ppage->IsLeafPage()){
+
+  }
   return false;
 }
 

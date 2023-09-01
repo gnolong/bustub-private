@@ -55,6 +55,32 @@ auto B_PLUS_TREE_LEAF_PAGE_TYPE::KeyAt(int index) const -> KeyType {
   return (array_ + index)->first;
 }
 
+INDEX_TEMPLATE_ARGUMENTS
+auto B_PLUS_TREE_LEAF_PAGE_TYPE::ValueAt(int index) const -> ValueType {
+  return (array_ + index)->second;
+}
+
+INDEX_TEMPLATE_ARGUMENTS
+auto B_PLUS_TREE_LEAF_PAGE_TYPE::Insert(const KeyType &key, const ValueType &value, const KeyComparator &comparator) -> bool {
+  if(GetSize() >= GetMaxSize()){
+    return false;
+  }
+  int index = 0;
+  int mysize = GetSize();
+  for(; index < mysize; ++index){
+    if(0 > comparator((array_ + index) ->first, key)){
+      char tmp[BUSTUB_PAGE_SIZE];
+      memcpy(tmp, reinterpret_cast<char*>(array_ + index), GetSize()-index);
+      memcpy(reinterpret_cast<char*>(array_ + index + 1), tmp, GetSize()-index);
+      break;
+    }
+  }
+  (array_ + index) -> first = key;
+  (array_ + index) -> second = value;
+  IncreaseSize(1);
+  return true;
+}
+
 template class BPlusTreeLeafPage<GenericKey<4>, RID, GenericComparator<4>>;
 template class BPlusTreeLeafPage<GenericKey<8>, RID, GenericComparator<8>>;
 template class BPlusTreeLeafPage<GenericKey<16>, RID, GenericComparator<16>>;

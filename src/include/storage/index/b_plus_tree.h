@@ -122,7 +122,9 @@ class BPlusTree {
 
   void PrintTree(page_id_t page_id, const BPlusTreePage *page);
 
-  /**
+  /* helper methods to inert */
+  // auto InertLeafPage(InternalPage *ppage, const KeyType &key, const ValueType &value) -> bool;
+  /*
    * @brief Convert A B+ tree into a Printable B+ tree
    *
    * @param root_id

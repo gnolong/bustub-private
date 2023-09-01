@@ -60,6 +60,9 @@ class BPlusTreeInternalPage : public BPlusTreePage {
    */
   void SetKeyAt(int index, const KeyType &key);
 
+  // set value
+  void SetValueAt(int index, const ValueType &value);
+
   /**
    *
    * @param value the value to search for
@@ -72,6 +75,9 @@ class BPlusTreeInternalPage : public BPlusTreePage {
    * @return the value at the index
    */
   auto ValueAt(int index) const -> ValueType;
+  
+  // insert key and value
+  auto Insert(int index, const KeyType &key, const ValueType &value) ->bool;
 
   /**
    * @brief For test only, return a string representing all keys in

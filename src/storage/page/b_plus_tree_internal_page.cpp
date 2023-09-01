@@ -12,6 +12,7 @@
 #include <iostream>
 #include <sstream>
 
+#include "common/config.h"
 #include "common/exception.h"
 #include "storage/page/b_plus_tree_internal_page.h"
 #include "storage/page/b_plus_tree_page.h"
@@ -46,6 +47,8 @@ auto B_PLUS_TREE_INTERNAL_PAGE_TYPE::KeyAt(int index) const -> KeyType {
 INDEX_TEMPLATE_ARGUMENTS
 void B_PLUS_TREE_INTERNAL_PAGE_TYPE::SetKeyAt(int index, const KeyType &key) { (array_ + index)->first = key; }
 
+INDEX_TEMPLATE_ARGUMENTS
+void B_PLUS_TREE_INTERNAL_PAGE_TYPE::SetValueAt(int index, const ValueType &value) { (array_ + index)->second = value; }
 /*
  * Helper method to get the value associated with input "index"(a.k.a array
  * offset)
@@ -53,6 +56,21 @@ void B_PLUS_TREE_INTERNAL_PAGE_TYPE::SetKeyAt(int index, const KeyType &key) { (
 INDEX_TEMPLATE_ARGUMENTS
 auto B_PLUS_TREE_INTERNAL_PAGE_TYPE::ValueAt(int index) const -> ValueType { return (array_ + index)->second; }
 
+INDEX_TEMPLATE_ARGUMENTS
+auto B_PLUS_TREE_INTERNAL_PAGE_TYPE::Insert(int index, const KeyType &key, const ValueType &value) ->bool {
+  if(GetSize() >= GetMaxSize()){
+    return false;
+  }
+  if(index != GetSize()){
+    char tmp[BUSTUB_PAGE_SIZE];
+    memcpy(tmp, reinterpret_cast<char*>(array_ + index), GetSize()-index);
+    memcpy(reinterpret_cast<char*>(array_ + index + 1), tmp, GetSize()-index);
+  }
+  SetKeyAt(index, key);
+  SetValueAt(index, value);
+  IncreaseSize(1);
+  return true;                                            
+}
 // valuetype for internalNode should be page id_t
 template class BPlusTreeInternalPage<GenericKey<4>, page_id_t, GenericComparator<4>>;
 template class BPlusTreeInternalPage<GenericKey<8>, page_id_t, GenericComparator<8>>;
