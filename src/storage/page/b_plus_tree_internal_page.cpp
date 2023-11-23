@@ -61,11 +61,9 @@ auto B_PLUS_TREE_INTERNAL_PAGE_TYPE::Insert(int index, const KeyType &key, const
   if(GetSize() >= GetMaxSize()){
     return false;
   }
-  if(index != GetSize()){
-    char tmp[BUSTUB_PAGE_SIZE];
-    memcpy(tmp, reinterpret_cast<char*>(array_ + index), GetSize()-index);
-    memcpy(reinterpret_cast<char*>(array_ + index + 1), tmp, GetSize()-index);
-  }
+  char tmp[BUSTUB_PAGE_SIZE];
+  memcpy(tmp, reinterpret_cast<char*>(array_ + index), GetSize()-index);
+  memcpy(reinterpret_cast<char*>(array_ + index + 1), tmp, GetSize()-index);
   SetKeyAt(index, key);
   SetValueAt(index, value);
   IncreaseSize(1);

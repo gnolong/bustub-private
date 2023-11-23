@@ -1,6 +1,7 @@
 #include <cstring>
 #include <sstream>
 #include <string>
+#include <utility>
 
 #include "common/config.h"
 #include "common/exception.h"
@@ -64,21 +65,13 @@ auto BPLUSTREE_TYPE::GetValue(const KeyType &key, std::vector<ValueType> *result
   if(0 == ppage->GetSize()){
     return false;
   }
-  do{
+  while(!ppage->IsLeafPage()){
     auto cursize = ppage->GetSize();
-    bool find_flag = false;
-    for(int i = 1; i < cursize; ++i){
-      if(0 >= comparator_(key,ppage->KeyAt(i))){
-        guard = bpm_->FetchPageRead(ppage->ValueAt(i-1));
-        find_flag = true;
-        break;
-      }
-    }
-    if(!find_flag){
-      guard = bpm_->FetchPageRead(ppage->ValueAt(cursize-1));
-    }
+    int i = 1;
+    while(i < cursize && 0 <= comparator_(key, ppage->KeyAt(i++))){}
+    guard = bpm_->FetchPageRead(ppage->ValueAt(i-1));
     ppage = guard.As<InternalPage>();
-  }while(!ppage->IsLeafPage());
+  }
   auto ppage_leaf = reinterpret_cast<const LeafPage*>(ppage);
   auto cursize = ppage_leaf->GetSize();
   for(int i = 0; i < cursize; ++i){
@@ -115,12 +108,48 @@ auto BPLUSTREE_TYPE::Insert(const KeyType &key, const ValueType &value, Transact
     page_id_t page_id = INVALID_PAGE_ID;
     auto bguard = bpm_->NewPageGuarded(&page_id);
     root_page->root_page_id_ = page_id;
+    auto ppage = bguard.AsMut<LeafPage>();
+    ppage->Init(leaf_max_size_);
   }
   wguard = bpm_->FetchPageWrite(root_page->root_page_id_);
   auto ppage = wguard.AsMut<InternalPage>();
-  if(ppage->IsLeafPage()){
-
+  while(!ppage->IsLeafPage()){
+    auto cursize = ppage->GetSize();
+    int i = 1;
+    while(i < cursize && 0 <= comparator_(key, ppage->KeyAt(i++))){}
+    wguard = bpm_->FetchPageWrite(ppage->ValueAt(i-1));
+    ppage = wguard.AsMut<InternalPage>();
   }
+  auto ppage_lf = reinterpret_cast<LeafPage*>(ppage);
+  auto cursize = ppage_lf->GetSize();
+
+  /* leaf_page insertion with a simple method*/
+
+  //return normal inertion
+  auto res = ppage_lf->Insert(key,value,comparator_); 
+  //succeed
+  if(0 == res){
+    return true;
+  }
+  //duplicate key
+  if(1 == res){
+    return false;
+  }
+  //should be split
+  page_id_t pid1 = 0;
+  auto page1 = bpm_->NewPageGuarded(&pid1);
+  page1.Drop();
+  auto guard_lf1 = bpm_->FetchPageWrite(pid1);
+  auto ppage_lf1 = guard_lf1.AsMut<LeafPage>();
+  ppage_lf1->Init(leaf_max_size_);
+  ppage_lf->SetNextPageId(pid1);
+
+  {
+    int i = 0;
+    while(i < cursize && 0 <= comparator_(key, ppage_lf->KeyAt(i++))){}
+    ppage_lf->SpInsert(*ppage_lf1, i, key, value);
+  }
+
   return false;
 }
 
