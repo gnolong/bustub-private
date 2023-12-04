@@ -57,9 +57,9 @@ INDEX_TEMPLATE_ARGUMENTS
 auto B_PLUS_TREE_INTERNAL_PAGE_TYPE::ValueAt(int index) const -> ValueType { return (array_ + index)->second; }
 
 INDEX_TEMPLATE_ARGUMENTS
-auto B_PLUS_TREE_INTERNAL_PAGE_TYPE::Insert(int index, const KeyType &key, const ValueType &value) ->bool {
+auto B_PLUS_TREE_INTERNAL_PAGE_TYPE::Insert(int index, const KeyType &key, const ValueType &value) ->int {
   if(GetSize() >= GetMaxSize()){
-    return false;
+    return -1;
   }
   char tmp[BUSTUB_PAGE_SIZE];
   memcpy(tmp, reinterpret_cast<char*>(array_ + index), GetSize()-index);
@@ -67,7 +67,34 @@ auto B_PLUS_TREE_INTERNAL_PAGE_TYPE::Insert(int index, const KeyType &key, const
   SetKeyAt(index, key);
   SetValueAt(index, value);
   IncreaseSize(1);
-  return true;                                            
+  return 0;                                            
+}
+INDEX_TEMPLATE_ARGUMENTS
+auto B_PLUS_TREE_INTERNAL_PAGE_TYPE::SpInsert(BPlusTreeInternalPage &page, int index, 
+                                    const KeyType &key, const ValueType &value) ->int{
+  MappingType mid_array[BUSTUB_PAGE_SIZE*2];
+  memset(reinterpret_cast<void*>(mid_array), 0, sizeof(mid_array));
+  assert(GetSize() == GetMaxSize());
+  if(GetMaxSize() == index){
+    memcpy(reinterpret_cast<void*>(mid_array), reinterpret_cast<void*>(array_), sizeof(MappingType)*GetSize());
+    mid_array[index].first = key;
+    mid_array[index].second = value;
+  }
+  else{
+    memcpy(reinterpret_cast<void*>(mid_array), reinterpret_cast<void*>(array_), sizeof(MappingType)*index);
+    mid_array[index].first = key;
+    mid_array[index].second = value;
+    memcpy(reinterpret_cast<void*>(mid_array+index+1), reinterpret_cast<void*>(array_+index), sizeof(MappingType)*(GetSize()-index));
+  }
+  int cursize = GetMaxSize()+1;
+  int mid_index = cursize /  2;
+  memcpy(reinterpret_cast<void*>(array_), reinterpret_cast<void*>(mid_array), sizeof(MappingType)*mid_index);
+  memcpy(reinterpret_cast<void *>(page.array_+1), reinterpret_cast<void *>(mid_array + mid_index+1), sizeof(MappingType) * (cursize - mid_index-1));
+  page.SetValueAt(0, mid_array[mid_index].second);
+  SetSize(mid_index);
+  page.SetSize(cursize-mid_index);
+  return 0;
+  return 0;
 }
 // valuetype for internalNode should be page id_t
 template class BPlusTreeInternalPage<GenericKey<4>, page_id_t, GenericComparator<4>>;

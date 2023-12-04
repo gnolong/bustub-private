@@ -2,6 +2,7 @@
 #include <sstream>
 #include <string>
 #include <utility>
+#include <stack>
 
 #include "common/config.h"
 #include "common/exception.h"
@@ -102,21 +103,26 @@ auto BPLUSTREE_TYPE::Insert(const KeyType &key, const ValueType &value, Transact
   //   page_id_t page_id = INVALID_PAGE_ID;
   //   auto guard = bpm_->NewPageGuarded(&page_id);
   // }
-  auto wguard = bpm_->FetchPageWrite(header_page_id_);
-  auto root_page = wguard.AsMut<BPlusTreeHeaderPage>();
-  if(INVALID_PAGE_ID == root_page->root_page_id_){
+  ctx.header_page_ = bpm_->FetchPageWrite(header_page_id_);
+  auto head_page = ctx.header_page_.value().AsMut<BPlusTreeHeaderPage>();
+  if(INVALID_PAGE_ID == head_page->root_page_id_){
     page_id_t page_id = INVALID_PAGE_ID;
     auto bguard = bpm_->NewPageGuarded(&page_id);
-    root_page->root_page_id_ = page_id;
+    head_page->root_page_id_ = page_id;
     auto ppage = bguard.AsMut<LeafPage>();
     ppage->Init(leaf_max_size_);
   }
-  wguard = bpm_->FetchPageWrite(root_page->root_page_id_);
+  ctx.root_page_id_ = head_page->root_page_id_;
+  
+  auto wguard = bpm_->FetchPageWrite(head_page->root_page_id_);
   auto ppage = wguard.AsMut<InternalPage>();
   while(!ppage->IsLeafPage()){
+    //pay attention to lvalue and rvalue
+    ctx.write_set_.push_back(std::move(wguard));
     auto cursize = ppage->GetSize();
     int i = 1;
     while(i < cursize && 0 <= comparator_(key, ppage->KeyAt(i++))){}
+    ctx.write_index_set_.push_back(i);
     wguard = bpm_->FetchPageWrite(ppage->ValueAt(i-1));
     ppage = wguard.AsMut<InternalPage>();
   }
@@ -129,6 +135,7 @@ auto BPLUSTREE_TYPE::Insert(const KeyType &key, const ValueType &value, Transact
   auto res = ppage_lf->Insert(key,value,comparator_); 
   //succeed
   if(0 == res){
+    DrawBPlusTree();
     return true;
   }
   //duplicate key
@@ -150,7 +157,48 @@ auto BPLUSTREE_TYPE::Insert(const KeyType &key, const ValueType &value, Transact
     ppage_lf->SpInsert(*ppage_lf1, i, key, value);
   }
 
-  return false;
+  auto upkey = ppage_lf1->KeyAt(0);
+  auto pid_lf = wguard.PageId();
+  auto pid_rt = pid1;
+
+  /* internal page process */
+  while(!ctx.write_set_.empty()){
+    ppage = ctx.write_set_.back().AsMut<InternalPage>();
+    int idx = ctx.write_index_set_.back();
+    auto ans = ppage->Insert(idx, upkey, pid_rt);
+    if(!ans){
+      DrawBPlusTree();
+      return true;
+    }
+    auto page_inter = bpm_->NewPageGuarded(&pid1);
+    page_inter.Drop();
+    auto guard_inter = bpm_->FetchPageWrite(pid1);
+    auto ppage_inter = guard_inter.AsMut<InternalPage>();
+    ppage_inter->Init(internal_max_size_);
+    ppage->SpInsert(*ppage_inter, idx, upkey, pid_rt);
+    upkey = ppage_inter->KeyAt(1);
+    ctx.write_index_set_.pop_back();
+    ctx.write_set_.pop_back();
+    pid_lf = ctx.write_index_set_.back();
+    pid_rt = pid1;
+  }
+  
+
+  auto page_inter = bpm_->NewPageGuarded(&pid1);
+  page_inter.Drop();
+  auto guard_inter = bpm_->FetchPageWrite(pid1);
+  auto ppage_inter = guard_inter.AsMut<InternalPage>();
+  ppage_inter->Init(internal_max_size_);
+  ppage_inter->SetKeyAt(1,upkey);
+  ppage_inter->SetValueAt(0, pid_lf);
+  ppage_inter->SetValueAt(1, pid_rt);
+  ppage_inter->IncreaseSize(2);//refer to the number of value
+  head_page->root_page_id_ = pid1;
+
+  ctx.root_page_id_ = pid1;
+
+  DrawBPlusTree();
+  return true;
 }
 
 /*****************************************************************************
