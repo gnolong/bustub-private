@@ -69,7 +69,9 @@ auto BPLUSTREE_TYPE::GetValue(const KeyType &key, std::vector<ValueType> *result
   while(!ppage->IsLeafPage()){
     auto cursize = ppage->GetSize();
     int i = 1;
-    while(i < cursize && 0 <= comparator_(key, ppage->KeyAt(i++))){}
+    while(i < cursize && 0 <= comparator_(key, ppage->KeyAt(i))){
+      ++i;
+    }
     guard = bpm_->FetchPageRead(ppage->ValueAt(i-1));
     ppage = guard.As<InternalPage>();
   }
@@ -77,7 +79,7 @@ auto BPLUSTREE_TYPE::GetValue(const KeyType &key, std::vector<ValueType> *result
   auto cursize = ppage_leaf->GetSize();
   for(int i = 0; i < cursize; ++i){
     if(0 == comparator_(key,ppage_leaf->KeyAt(i))){
-      result->emplace_back(ppage_leaf->ValueAt(i));
+      result->push_back(ppage_leaf->ValueAt(i));
       return true;
     }
   }
@@ -121,7 +123,9 @@ auto BPLUSTREE_TYPE::Insert(const KeyType &key, const ValueType &value, Transact
     ctx.write_set_.push_back(std::move(wguard));
     auto cursize = ppage->GetSize();
     int i = 1;
-    while(i < cursize && 0 <= comparator_(key, ppage->KeyAt(i++))){}
+    while(i < cursize && 0 <= comparator_(key, ppage->KeyAt(i))){
+      ++i;
+    }
     ctx.write_index_set_.push_back(i);
     wguard = bpm_->FetchPageWrite(ppage->ValueAt(i-1));
     ppage = wguard.AsMut<InternalPage>();
@@ -135,7 +139,6 @@ auto BPLUSTREE_TYPE::Insert(const KeyType &key, const ValueType &value, Transact
   auto res = ppage_lf->Insert(key,value,comparator_); 
   //succeed
   if(0 == res){
-    DrawBPlusTree();
     return true;
   }
   //duplicate key
@@ -153,7 +156,9 @@ auto BPLUSTREE_TYPE::Insert(const KeyType &key, const ValueType &value, Transact
 
   {
     int i = 0;
-    while(i < cursize && 0 <= comparator_(key, ppage_lf->KeyAt(i++))){}
+    while(i < cursize && 0 <= comparator_(key, ppage_lf->KeyAt(i))){
+      ++i;
+    }
     ppage_lf->SpInsert(*ppage_lf1, i, key, value);
   }
 
@@ -167,7 +172,7 @@ auto BPLUSTREE_TYPE::Insert(const KeyType &key, const ValueType &value, Transact
     int idx = ctx.write_index_set_.back();
     auto ans = ppage->Insert(idx, upkey, pid_rt);
     if(!ans){
-      DrawBPlusTree();
+      // std::cout << "upkey" << upkey <<'\n';
       return true;
     }
     auto page_inter = bpm_->NewPageGuarded(&pid1);
@@ -175,12 +180,11 @@ auto BPLUSTREE_TYPE::Insert(const KeyType &key, const ValueType &value, Transact
     auto guard_inter = bpm_->FetchPageWrite(pid1);
     auto ppage_inter = guard_inter.AsMut<InternalPage>();
     ppage_inter->Init(internal_max_size_);
-    ppage->SpInsert(*ppage_inter, idx, upkey, pid_rt);
-    upkey = ppage_inter->KeyAt(1);
+    ppage->SpInsert(*ppage_inter, idx, upkey, pid_rt,upkey);
+    pid_lf = ctx.write_set_.back().PageId();
+    pid_rt = pid1;
     ctx.write_index_set_.pop_back();
     ctx.write_set_.pop_back();
-    pid_lf = ctx.write_index_set_.back();
-    pid_rt = pid1;
   }
   
 
@@ -197,7 +201,6 @@ auto BPLUSTREE_TYPE::Insert(const KeyType &key, const ValueType &value, Transact
 
   ctx.root_page_id_ = pid1;
 
-  DrawBPlusTree();
   return true;
 }
 
@@ -249,7 +252,11 @@ auto BPLUSTREE_TYPE::End() -> INDEXITERATOR_TYPE { return INDEXITERATOR_TYPE(); 
  * @return Page id of the root of this tree
  */
 INDEX_TEMPLATE_ARGUMENTS
-auto BPLUSTREE_TYPE::GetRootPageId() -> page_id_t { return 0; }
+auto BPLUSTREE_TYPE::GetRootPageId() -> page_id_t {
+  WritePageGuard guard = bpm_->FetchPageWrite(header_page_id_);
+  auto root_page = guard.AsMut<BPlusTreeHeaderPage>();
+  return root_page->root_page_id_;
+}
 
 /*****************************************************************************
  * UTILITIES AND DEBUG

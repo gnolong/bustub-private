@@ -78,7 +78,8 @@ class BPlusTreeInternalPage : public BPlusTreePage {
   
   // insert key and value
   auto Insert(int index, const KeyType &key, const ValueType &value) ->int;
-  auto SpInsert(BPlusTreeInternalPage &page, int index, const KeyType &key, const ValueType &value) ->int;
+  auto SpInsert(BPlusTreeInternalPage &page, int index, const KeyType &key, const ValueType &value,
+                KeyType &upkey) ->int;
 
   /**
    * @brief For test only, return a string representing all keys in
