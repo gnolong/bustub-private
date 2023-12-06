@@ -38,5 +38,10 @@ void BPlusTreePage::SetMaxSize(int size) { max_size_ = size; }
  * Helper method to get min page size
  * Generally, min page size == max page size / 2
  */
-auto BPlusTreePage::GetMinSize() const -> int { return max_size_ / 2; }
+auto BPlusTreePage::GetMinSize() const -> int {
+    if(page_type_ == IndexPageType::INTERNAL_PAGE){
+        return (max_size_ / 2) >= 2 ?  max_size_ / 2 : 2;
+    }
+    return max_size_ / 2;
+}
 }  // namespace bustub

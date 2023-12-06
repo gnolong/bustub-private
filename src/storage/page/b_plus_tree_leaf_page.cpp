@@ -155,8 +155,10 @@ INDEX_TEMPLATE_ARGUMENTS
 auto B_PLUS_TREE_LEAF_PAGE_TYPE::Merge(BPlusTreeLeafPage &page) -> int {
   auto mysize = GetSize();
   auto cp_size = sizeof(MappingType)*page.GetSize();
-  memcpy(reinterpret_cast<void*>(array_ + mysize), reinterpret_cast<void*>(page.array_),cp_size);
-  IncreaseSize(page.GetSize());
+  if(cp_size > 0){
+    memcpy(reinterpret_cast<void*>(array_ + mysize), reinterpret_cast<void*>(page.array_),cp_size);
+    IncreaseSize(page.GetSize());
+  }
   next_page_id_ = page.next_page_id_;
   return 0;
 }

@@ -119,7 +119,7 @@ auto B_PLUS_TREE_INTERNAL_PAGE_TYPE::Merge(BPlusTreeInternalPage &page_p, int in
   array_[mysize].second= page_bro.array_[0].second;
   auto brosize = page_bro.GetSize();
   if(brosize > 1){
-    auto cp_size = sizeof(MappingType)*brosize;
+    auto cp_size = sizeof(MappingType)*(brosize-1);
     memcpy(reinterpret_cast<void*>(array_ + mysize + 1), reinterpret_cast<void*>(page_bro.array_+1),cp_size);
   }
   IncreaseSize(brosize);
