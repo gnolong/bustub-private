@@ -80,7 +80,8 @@ class BPlusTreeInternalPage : public BPlusTreePage {
   auto Insert(int index, const KeyType &key, const ValueType &value) ->int;
   auto SpInsert(BPlusTreeInternalPage &page, int index, const KeyType &key, const ValueType &value,
                 KeyType &upkey) ->int;
-
+  auto Remove(int index) -> int;
+  auto Merge(BPlusTreeInternalPage &page_p, int index, BPlusTreeInternalPage &page_bro) -> int;
   /**
    * @brief For test only, return a string representing all keys in
    * this internal page, formatted as "(key1,key2,key3,...)"

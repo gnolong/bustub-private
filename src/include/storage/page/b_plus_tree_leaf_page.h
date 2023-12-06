@@ -59,8 +59,12 @@ class BPlusTreeLeafPage : public BPlusTreePage {
   void SetNextPageId(page_id_t next_page_id);
   auto KeyAt(int index) const -> KeyType;
   auto ValueAt(int index) const -> ValueType;
+  auto SetKeyAt(int index, const KeyType &key) -> void;
+  auto SetValueAt(int index, const ValueType &value) -> void;
   auto Insert(const KeyType &key, const ValueType &value, const KeyComparator &comparator) -> int;
-  auto SpInsert(BPlusTreeLeafPage &page1, int index, const KeyType &key, const ValueType &value) -> int;
+  auto SpInsert(BPlusTreeLeafPage &page, int index, const KeyType &key, const ValueType &value) -> int;
+  auto Remove(const KeyType &key, const KeyComparator &comparator) -> int;
+  auto Merge(BPlusTreeLeafPage &page) -> int;
   /**
    * @brief for test only return a string representing all keys in
    * this leaf page formatted as "(key1,key2,key3,...)"

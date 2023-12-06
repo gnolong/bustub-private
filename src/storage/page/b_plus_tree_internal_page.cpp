@@ -9,6 +9,7 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include <cstring>
 #include <iostream>
 #include <sstream>
 
@@ -96,6 +97,32 @@ auto B_PLUS_TREE_INTERNAL_PAGE_TYPE::SpInsert(BPlusTreeInternalPage &page, int i
   upkey = mid_array[mid_index].first;
   SetSize(mid_index);
   page.SetSize(cursize-mid_index);
+  return 0;
+}
+INDEX_TEMPLATE_ARGUMENTS
+auto B_PLUS_TREE_INTERNAL_PAGE_TYPE::Remove(int index) -> int {
+  //index has been checked before;
+  if(index != GetSize()-1){
+    auto cp_size = sizeof(MappingType)*(GetSize()-index-1);
+    memcpy(reinterpret_cast<void*>(array_+index), reinterpret_cast<void*>(array_+index+1), cp_size);
+  }
+  IncreaseSize(-1);
+  if(GetSize() < GetMinSize()){
+    return 1;
+  }
+  return 0;
+}
+INDEX_TEMPLATE_ARGUMENTS
+auto B_PLUS_TREE_INTERNAL_PAGE_TYPE::Merge(BPlusTreeInternalPage &page_p, int index, BPlusTreeInternalPage &page_bro) -> int {
+  auto mysize = GetSize();
+  array_[mysize].first= page_p.array_[index].first;
+  array_[mysize].second= page_bro.array_[0].second;
+  auto brosize = page_bro.GetSize();
+  if(brosize > 1){
+    auto cp_size = sizeof(MappingType)*brosize;
+    memcpy(reinterpret_cast<void*>(array_ + mysize + 1), reinterpret_cast<void*>(page_bro.array_+1),cp_size);
+  }
+  IncreaseSize(brosize);
   return 0;
 }
 // valuetype for internalNode should be page id_t

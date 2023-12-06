@@ -12,6 +12,7 @@
 #include <cassert>
 #include <cstdint>
 #include <cstring>
+#include <map>
 #include <sstream>
 
 #include "common/config.h"
@@ -63,6 +64,15 @@ auto B_PLUS_TREE_LEAF_PAGE_TYPE::ValueAt(int index) const -> ValueType {
   return (array_ + index)->second;
 }
 
+INDEX_TEMPLATE_ARGUMENTS
+auto B_PLUS_TREE_LEAF_PAGE_TYPE::SetKeyAt(int index, const KeyType &key) -> void {
+  array_[index].first = key;
+}
+
+INDEX_TEMPLATE_ARGUMENTS
+auto B_PLUS_TREE_LEAF_PAGE_TYPE::SetValueAt(int index, const ValueType &value) -> void {
+  array_[index].second = value;
+}
 INDEX_TEMPLATE_ARGUMENTS
 auto B_PLUS_TREE_LEAF_PAGE_TYPE::Insert(const KeyType &key, const ValueType &value, const KeyComparator &comparator) -> int {
   if(GetSize() >= GetMaxSize()){
@@ -116,6 +126,38 @@ auto B_PLUS_TREE_LEAF_PAGE_TYPE::SpInsert(BPlusTreeLeafPage &page, int index, co
   memcpy(reinterpret_cast<void *>(page.array_), reinterpret_cast<void *>(mid_array + mid_index), sizeof(MappingType) * (cursize - mid_index));
   SetSize(mid_index);
   page.SetSize(cursize-mid_index);
+  return 0;
+}
+INDEX_TEMPLATE_ARGUMENTS
+auto B_PLUS_TREE_LEAF_PAGE_TYPE::Remove(const KeyType &key, const KeyComparator &comparator) -> int {
+  int mysize = GetSize();
+  if(mysize == 0){
+    return -1;
+  }
+  int index = 0;
+  for(; index < mysize; ++index){
+    auto res = comparator((array_ + index) ->first, key);
+    if(0 == res){
+      if(index != mysize-1){
+        int cp_size = sizeof(MappingType)*(GetSize()-index-1);
+        memcpy(reinterpret_cast<char*>(array_ + index), reinterpret_cast<char*>(array_ + index + 1), cp_size);
+      }
+      IncreaseSize(-1);
+      if(GetSize() < GetMinSize()){
+        return 1;
+      }
+      return 0;
+    }
+  }
+  return 0;
+}
+INDEX_TEMPLATE_ARGUMENTS
+auto B_PLUS_TREE_LEAF_PAGE_TYPE::Merge(BPlusTreeLeafPage &page) -> int {
+  auto mysize = GetSize();
+  auto cp_size = sizeof(MappingType)*page.GetSize();
+  memcpy(reinterpret_cast<void*>(array_ + mysize), reinterpret_cast<void*>(page.array_),cp_size);
+  IncreaseSize(page.GetSize());
+  next_page_id_ = page.next_page_id_;
   return 0;
 }
 template class BPlusTreeLeafPage<GenericKey<4>, RID, GenericComparator<4>>;
