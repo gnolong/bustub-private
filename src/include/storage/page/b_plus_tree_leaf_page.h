@@ -65,6 +65,7 @@ class BPlusTreeLeafPage : public BPlusTreePage {
   auto SpInsert(BPlusTreeLeafPage &page, int index, const KeyType &key, const ValueType &value) -> int;
   auto Remove(const KeyType &key, const KeyComparator &comparator) -> int;
   auto Merge(BPlusTreeLeafPage &page) -> int;
+  auto MapAt(int index) -> MappingType &;
   /**
    * @brief for test only return a string representing all keys in
    * this leaf page formatted as "(key1,key2,key3,...)"

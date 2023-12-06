@@ -32,13 +32,18 @@ class IndexIterator {
 
   auto operator++() -> IndexIterator &;
 
-  auto operator==(const IndexIterator &itr) const -> bool { throw std::runtime_error("unimplemented"); }
+  auto operator==(const IndexIterator &itr) const -> bool {
+    return static_cast<bool>(page_ == itr.page_ && index_ == itr.index_);
+  }
 
-  auto operator!=(const IndexIterator &itr) const -> bool { throw std::runtime_error("unimplemented"); }
+  auto operator!=(const IndexIterator &itr) const -> bool {
+    return page_ != itr.page_ || index_ != itr.index_;
+  }
 
  private:
   // add your own private member variables here
-  
+  BPlusTreeLeafPage<KeyType, ValueType, KeyComparator> *page_{nullptr};
+  int index_{0};
 };
 
 }  // namespace bustub
