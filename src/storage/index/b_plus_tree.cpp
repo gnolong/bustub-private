@@ -478,7 +478,25 @@ void BPLUSTREE_TYPE::Remove(const KeyType &key, Transaction *txn) {
  * @return : index iterator
  */
 INDEX_TEMPLATE_ARGUMENTS
-auto BPLUSTREE_TYPE::Begin() -> INDEXITERATOR_TYPE { return INDEXITERATOR_TYPE(); }
+auto BPLUSTREE_TYPE::Begin() -> INDEXITERATOR_TYPE { 
+  auto guard = bpm_->FetchPageWrite(header_page_id_);
+  auto root_page = guard.As<BPlusTreeHeaderPage>();
+  if(INVALID_PAGE_ID == root_page->root_page_id_){
+    return INDEXITERATOR_TYPE(nullptr, BUSTUB_PAGE_SIZE, bpm_);
+  
+  }
+  guard = bpm_->FetchPageWrite(root_page->root_page_id_);
+  auto ppage = guard.AsMut<InternalPage>();
+  if(0 == ppage->GetSize()){
+    return INDEXITERATOR_TYPE(nullptr, BUSTUB_PAGE_SIZE, bpm_);
+  }
+  while(!ppage->IsLeafPage()){
+    guard = bpm_->FetchPageWrite(ppage->ValueAt(0));
+    ppage = guard.AsMut<InternalPage>();
+  }
+  auto ppage_leaf = reinterpret_cast<LeafPage*>(ppage);
+  return INDEXITERATOR_TYPE(ppage_leaf, 0, bpm_);
+}
 
 /*
  * Input parameter is low key, find the leaf page that contains the input key
@@ -486,7 +504,35 @@ auto BPLUSTREE_TYPE::Begin() -> INDEXITERATOR_TYPE { return INDEXITERATOR_TYPE()
  * @return : index iterator
  */
 INDEX_TEMPLATE_ARGUMENTS
-auto BPLUSTREE_TYPE::Begin(const KeyType &key) -> INDEXITERATOR_TYPE { return INDEXITERATOR_TYPE(); }
+auto BPLUSTREE_TYPE::Begin(const KeyType &key) -> INDEXITERATOR_TYPE { 
+  auto guard = bpm_->FetchPageWrite(header_page_id_);
+  auto root_page = guard.AsMut<BPlusTreeHeaderPage>();
+  if(INVALID_PAGE_ID == root_page->root_page_id_){
+    return INDEXITERATOR_TYPE(nullptr, BUSTUB_PAGE_SIZE, bpm_);
+  }
+  guard = bpm_->FetchPageWrite(root_page->root_page_id_);
+  auto ppage = guard.AsMut<InternalPage>();
+  if(0 == ppage->GetSize()){
+    return INDEXITERATOR_TYPE(nullptr, BUSTUB_PAGE_SIZE, bpm_);
+  }
+  while(!ppage->IsLeafPage()){
+    auto cursize = ppage->GetSize();
+    int i = 1;
+    while(i < cursize && 0 <= comparator_(key, ppage->KeyAt(i))){
+      ++i;
+    }
+    guard = bpm_->FetchPageWrite(ppage->ValueAt(i-1));
+    ppage = guard.AsMut<InternalPage>();
+  }
+  auto ppage_leaf = reinterpret_cast<LeafPage*>(ppage);
+  auto cursize = ppage_leaf->GetSize();
+  for(int i = 0; i < cursize; ++i){
+    if(0 == comparator_(key,ppage_leaf->KeyAt(i))){
+      return INDEXITERATOR_TYPE(ppage_leaf, i, bpm_);
+    }
+  }
+  return INDEXITERATOR_TYPE(nullptr, BUSTUB_PAGE_SIZE, bpm_);
+}
 
 /*
  * Input parameter is void, construct an index iterator representing the end
@@ -494,7 +540,9 @@ auto BPLUSTREE_TYPE::Begin(const KeyType &key) -> INDEXITERATOR_TYPE { return IN
  * @return : index iterator
  */
 INDEX_TEMPLATE_ARGUMENTS
-auto BPLUSTREE_TYPE::End() -> INDEXITERATOR_TYPE { return INDEXITERATOR_TYPE(); }
+auto BPLUSTREE_TYPE::End() -> INDEXITERATOR_TYPE {
+  return INDEXITERATOR_TYPE(nullptr, BUSTUB_PAGE_SIZE, bpm_);
+}
 
 /**
  * @return Page id of the root of this tree
