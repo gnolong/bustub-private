@@ -130,6 +130,7 @@ TEST(BPlusTreeTests, DDeleteTest2) {
     // std::cout << tree.DrawBPlusTree() <<'\n';
   }
 
+  std::cout << tree.DrawBPlusTree() <<'\n';
   std::vector<RID> rids;
   for (auto key : keys) {
     rids.clear();

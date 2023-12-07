@@ -135,7 +135,6 @@ auto BPLUSTREE_TYPE::Insert(const KeyType &key, const ValueType &value, Transact
   }
   auto ppage_lf = reinterpret_cast<LeafPage*>(ppage);
   auto cursize = ppage_lf->GetSize();
-
   /* leaf_page insertion with a simple method*/
 
   //return normal inertion
@@ -144,6 +143,23 @@ auto BPLUSTREE_TYPE::Insert(const KeyType &key, const ValueType &value, Transact
   if(0 == res){
     return true;
   }
+  
+  while(ctx.write_set_.size() > 1){
+    ppage = ctx.write_set_.front().AsMut<InternalPage>();
+    auto itr_t = ctx.write_set_.begin()+1;
+    auto page_t = itr_t->AsMut<InternalPage>();
+    if(ppage->GetSize() < ppage->GetMaxSize() && 
+      page_t->GetSize() < page_t->GetMaxSize()){
+      if(ctx.IsRootPage(ctx.write_set_.front().PageId())){
+        ctx.header_page_.reset();
+      }
+      ctx.write_set_.pop_front();
+      ctx.write_index_set_.pop_front();
+      continue;
+    }
+    break;
+  }
+
   //duplicate key
   if(1 == res){
     return false;
@@ -202,7 +218,7 @@ auto BPLUSTREE_TYPE::Insert(const KeyType &key, const ValueType &value, Transact
   //refer to the number of value
   
   head_page->root_page_id_ = pid1;
-  ctx.root_page_id_ = pid1;
+  // ctx.root_page_id_ = pid1;
 
   return true;
 }
@@ -266,6 +282,21 @@ void BPLUSTREE_TYPE::Remove(const KeyType &key, Transaction *txn) {
     return;
   }
 
+  while(ctx.write_set_.size() > 1){
+    ppage = ctx.write_set_.front().AsMut<InternalPage>();
+    auto itr_t = ctx.write_set_.begin()+1;
+    auto page_t = itr_t->AsMut<InternalPage>();
+    if(ppage->GetSize() > ppage->GetMinSize() && 
+      page_t->GetSize() < page_t->GetMinSize()){
+      if(ctx.IsRootPage(ctx.write_set_.front().PageId())){
+        ctx.header_page_.reset();
+      }
+      ctx.write_set_.pop_front();
+      ctx.write_index_set_.pop_front();
+      continue;
+    }
+    break;
+  }
   //page size is zero before removing
   if(-1 == res){
     throw Exception("page size is zero before removing");
