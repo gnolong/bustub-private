@@ -75,11 +75,11 @@ class BPlusTreeInternalPage : public BPlusTreePage {
    * @return the value at the index
    */
   auto ValueAt(int index) const -> ValueType;
-  
+
   // insert key and value
-  auto Insert(int index, const KeyType &key, const ValueType &value) ->int;
-  auto SpInsert(BPlusTreeInternalPage &page, int index, const KeyType &key, const ValueType &value,
-                KeyType &upkey) ->int;
+  auto Insert(int index, const KeyType &key, const ValueType &value) -> int;
+  auto SpInsert(BPlusTreeInternalPage &page, int index, const KeyType &key, const ValueType &value, KeyType &upkey)
+      -> int;
   auto Remove(int index) -> int;
   auto Merge(BPlusTreeInternalPage &page_p, int index, BPlusTreeInternalPage &page_bro) -> int;
   /**

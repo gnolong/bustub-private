@@ -13,36 +13,34 @@ namespace bustub {
  * set your own input parameters
  */
 INDEX_TEMPLATE_ARGUMENTS
-INDEXITERATOR_TYPE::IndexIterator(BPlusTreeLeafPage<KeyType, ValueType, KeyComparator> *page,
-                  int index,BufferPoolManager *bpm):
-                  page_(page), index_(index), bpm_(bpm){}
+INDEXITERATOR_TYPE::IndexIterator(BPlusTreeLeafPage<KeyType, ValueType, KeyComparator> *page, int index,
+                                  BufferPoolManager *bpm)
+    : page_(page), index_(index), bpm_(bpm) {}
 
 INDEX_TEMPLATE_ARGUMENTS
 INDEXITERATOR_TYPE::~IndexIterator() = default;  // NOLINT
 
 INDEX_TEMPLATE_ARGUMENTS
-auto INDEXITERATOR_TYPE::IsEnd() -> bool {
-    return static_cast<bool>(page_ == nullptr && index_ == BUSTUB_PAGE_SIZE);
-}
+auto INDEXITERATOR_TYPE::IsEnd() -> bool { return static_cast<bool>(page_ == nullptr && index_ == BUSTUB_PAGE_SIZE); }
 
 INDEX_TEMPLATE_ARGUMENTS
-auto INDEXITERATOR_TYPE::operator*() -> const MappingType & {
-    return page_->MapAt(index_);
-}
+auto INDEXITERATOR_TYPE::operator*() -> const MappingType & { return page_->MapAt(index_); }
 
 INDEX_TEMPLATE_ARGUMENTS
 auto INDEXITERATOR_TYPE::operator++() -> INDEXITERATOR_TYPE & {
-    if(++index_ < page_->GetSize()){
-        return *this;
-    }
-    if(page_->GetNextPageId() != INVALID_PAGE_ID){
-        index_ = 0;
-        auto wguard = bpm_->FetchPageWrite(page_->GetNextPageId());
-        page_ = wguard.template AsMut<BPlusTreeLeafPage<KeyType, ValueType, KeyComparator>>();
-    }
-    page_ = nullptr;
-    index_ = BUSTUB_PAGE_SIZE;
+  if (index_ + 1 < page_->GetSize()) {
+    ++index_;
     return *this;
+  }
+  if (page_->GetNextPageId() != INVALID_PAGE_ID) {
+    index_ = 0;
+    auto wguard = bpm_->FetchPageWrite(page_->GetNextPageId());
+    page_ = wguard.template AsMut<BPlusTreeLeafPage<KeyType, ValueType, KeyComparator>>();
+    return *this;
+  }
+  page_ = nullptr;
+  index_ = BUSTUB_PAGE_SIZE;
+  return *this;
 }
 
 template class IndexIterator<GenericKey<4>, RID, GenericComparator<4>>;

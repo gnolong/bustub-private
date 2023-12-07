@@ -25,8 +25,7 @@ INDEX_TEMPLATE_ARGUMENTS
 class IndexIterator {
  public:
   // you may define your own constructor based on your member variables
-  IndexIterator(BPlusTreeLeafPage<KeyType, ValueType, KeyComparator> *page,
-                  int index,BufferPoolManager *bpm);
+  IndexIterator(BPlusTreeLeafPage<KeyType, ValueType, KeyComparator> *page, int index, BufferPoolManager *bpm);
   ~IndexIterator();  // NOLINT
 
   auto IsEnd() -> bool;
@@ -39,9 +38,7 @@ class IndexIterator {
     return static_cast<bool>(page_ == itr.page_ && index_ == itr.index_);
   }
 
-  auto operator!=(const IndexIterator &itr) const -> bool {
-    return page_ != itr.page_ || index_ != itr.index_;
-  }
+  auto operator!=(const IndexIterator &itr) const -> bool { return page_ != itr.page_ || index_ != itr.index_; }
 
  private:
   // add your own private member variables here

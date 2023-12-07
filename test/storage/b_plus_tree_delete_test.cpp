@@ -35,7 +35,7 @@ TEST(BPlusTreeTests, DeleteTest1) {
   page_id_t page_id;
   auto header_page = bpm->NewPage(&page_id);
   // create b+ tree
-  BPlusTree<GenericKey<8>, RID, GenericComparator<8>> tree("foo_pk", header_page->GetPageId(), bpm, comparator,2,3);
+  BPlusTree<GenericKey<8>, RID, GenericComparator<8>> tree("foo_pk", header_page->GetPageId(), bpm, comparator, 2, 3);
   GenericKey<8> index_key;
   RID rid;
   // create transaction
@@ -47,8 +47,8 @@ TEST(BPlusTreeTests, DeleteTest1) {
     rid.Set(static_cast<int32_t>(key >> 32), value);
     index_key.SetFromInteger(key);
     tree.Insert(index_key, rid, transaction);
-    std::cout << "insert:" << key <<'\n';
-    std::cout << tree.DrawBPlusTree() <<'\n';
+    std::cout << "insert:" << key << '\n';
+    std::cout << tree.DrawBPlusTree() << '\n';
   }
 
   std::vector<RID> rids;
@@ -66,8 +66,8 @@ TEST(BPlusTreeTests, DeleteTest1) {
   for (auto key : remove_keys) {
     index_key.SetFromInteger(key);
     tree.Remove(index_key, transaction);
-    std::cout << "remove:" << key <<'\n';
-    std::cout << tree.DrawBPlusTree() <<'\n';
+    std::cout << "remove:" << key << '\n';
+    std::cout << tree.DrawBPlusTree() << '\n';
   }
 
   int64_t size = 0;
@@ -106,7 +106,7 @@ TEST(BPlusTreeTests, DDeleteTest2) {
   page_id_t page_id;
   auto header_page = bpm->NewPage(&page_id);
   // create b+ tree
-  BPlusTree<GenericKey<8>, RID, GenericComparator<8>> tree("foo_pk", header_page->GetPageId(), bpm, comparator,7,7);
+  BPlusTree<GenericKey<8>, RID, GenericComparator<8>> tree("foo_pk", header_page->GetPageId(), bpm, comparator, 7, 7);
   GenericKey<8> index_key;
   RID rid;
   // create transaction
@@ -130,7 +130,7 @@ TEST(BPlusTreeTests, DDeleteTest2) {
     // std::cout << tree.DrawBPlusTree() <<'\n';
   }
 
-  std::cout << tree.DrawBPlusTree() <<'\n';
+  std::cout << tree.DrawBPlusTree() << '\n';
   std::vector<RID> rids;
   for (auto key : keys) {
     rids.clear();
@@ -153,12 +153,12 @@ TEST(BPlusTreeTests, DDeleteTest2) {
   int len = keys.size();
   std::shuffle(keys.begin(), keys.end(), rng);
   int i = 0;
-  for(; i < len; ++i){
+  for (; i < len; ++i) {
     int key = keys[i];
     index_key.SetFromInteger(key);
     tree.Remove(index_key, transaction);
-    std::cout << "remove:" << key <<'\n';
-    for(int j = i+1; j < len; ++j){
+    std::cout << "remove:" << key << '\n';
+    for (int j = i + 1; j < len; ++j) {
       int key1 = keys[j];
       rids.clear();
       index_key.SetFromInteger(key1);
@@ -167,26 +167,24 @@ TEST(BPlusTreeTests, DDeleteTest2) {
 
       int64_t value = key1 & 0xFFFFFFFF;
       EXPECT_EQ(rids[0].GetSlotNum(), value);
-
     }
-    if(key == 25){
+    if (key == 25) {
       break;
     }
     // std::cout << tree.DrawBPlusTree() <<'\n';
-
   }
-  
-  std::cout << tree.DrawBPlusTree() <<'\n';
 
-  int len2 = len-1;
+  std::cout << tree.DrawBPlusTree() << '\n';
+
+  int len2 = len - 1;
   ++i;
-  for(; i <= len2; ++i){
+  for (; i <= len2; ++i) {
     int key = keys[i];
     index_key.SetFromInteger(key);
     tree.Remove(index_key, transaction);
-    std::cout << "remove:" << key <<'\n';
+    std::cout << "remove:" << key << '\n';
     // std::cout << tree.DrawBPlusTree() <<'\n';
-    for(int j = i+1; j < len; ++j){
+    for (int j = i + 1; j < len; ++j) {
       int key1 = keys[j];
       rids.clear();
       index_key.SetFromInteger(key1);
@@ -195,11 +193,10 @@ TEST(BPlusTreeTests, DDeleteTest2) {
 
       int64_t value = key1 & 0xFFFFFFFF;
       EXPECT_EQ(rids[0].GetSlotNum(), value);
-
     }
   }
-  
-  std::cout << tree.DrawBPlusTree() <<'\n';
+
+  std::cout << tree.DrawBPlusTree() << '\n';
   // int64_t size = 0;
   // bool is_present;
 

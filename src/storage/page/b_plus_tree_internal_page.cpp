@@ -58,69 +58,70 @@ INDEX_TEMPLATE_ARGUMENTS
 auto B_PLUS_TREE_INTERNAL_PAGE_TYPE::ValueAt(int index) const -> ValueType { return (array_ + index)->second; }
 
 INDEX_TEMPLATE_ARGUMENTS
-auto B_PLUS_TREE_INTERNAL_PAGE_TYPE::Insert(int index, const KeyType &key, const ValueType &value) ->int {
-  if(GetSize() >= GetMaxSize()){
+auto B_PLUS_TREE_INTERNAL_PAGE_TYPE::Insert(int index, const KeyType &key, const ValueType &value) -> int {
+  if (GetSize() >= GetMaxSize()) {
     return -1;
   }
   // char tmp[BUSTUB_PAGE_SIZE];
-  int cp_size = sizeof(MappingType)*(GetSize()-index);
+  int cp_size = sizeof(MappingType) * (GetSize() - index);
   // memcpy(tmp, reinterpret_cast<char*>(array_ + index), cp_size);
-  memmove(reinterpret_cast<char*>(array_ + index + 1), reinterpret_cast<char*>(array_ + index), cp_size);
+  memmove(reinterpret_cast<char *>(array_ + index + 1), reinterpret_cast<char *>(array_ + index), cp_size);
   SetKeyAt(index, key);
   SetValueAt(index, value);
   IncreaseSize(1);
-  return 0;                                            
+  return 0;
 }
 INDEX_TEMPLATE_ARGUMENTS
-auto B_PLUS_TREE_INTERNAL_PAGE_TYPE::SpInsert(BPlusTreeInternalPage &page, int index, 
-                                    const KeyType &key, const ValueType &value,
-                                    KeyType &upkey) ->int{
-  MappingType mid_array[BUSTUB_PAGE_SIZE*2];
-  memset(reinterpret_cast<void*>(mid_array), 0, sizeof(mid_array));
+auto B_PLUS_TREE_INTERNAL_PAGE_TYPE::SpInsert(BPlusTreeInternalPage &page, int index, const KeyType &key,
+                                              const ValueType &value, KeyType &upkey) -> int {
+  MappingType mid_array[BUSTUB_PAGE_SIZE * 2];
+  memset(reinterpret_cast<void *>(mid_array), 0, sizeof(mid_array));
   assert(GetSize() == GetMaxSize());
-  if(GetMaxSize() == index){
-    memcpy(reinterpret_cast<void*>(mid_array), reinterpret_cast<void*>(array_), sizeof(MappingType)*GetSize());
+  if (GetMaxSize() == index) {
+    memcpy(reinterpret_cast<void *>(mid_array), reinterpret_cast<void *>(array_), sizeof(MappingType) * GetSize());
     mid_array[index].first = key;
     mid_array[index].second = value;
-  }
-  else{
-    memcpy(reinterpret_cast<void*>(mid_array), reinterpret_cast<void*>(array_), sizeof(MappingType)*index);
+  } else {
+    memcpy(reinterpret_cast<void *>(mid_array), reinterpret_cast<void *>(array_), sizeof(MappingType) * index);
     mid_array[index].first = key;
     mid_array[index].second = value;
-    memcpy(reinterpret_cast<void*>(mid_array+index+1), reinterpret_cast<void*>(array_+index), sizeof(MappingType)*(GetSize()-index));
+    memcpy(reinterpret_cast<void *>(mid_array + index + 1), reinterpret_cast<void *>(array_ + index),
+           sizeof(MappingType) * (GetSize() - index));
   }
-  int cursize = GetMaxSize()+1;
-  int mid_index = cursize /  2;
-  memcpy(reinterpret_cast<void*>(array_), reinterpret_cast<void*>(mid_array), sizeof(MappingType)*mid_index);
-  memcpy(reinterpret_cast<void *>(page.array_+1), reinterpret_cast<void *>(mid_array + mid_index+1), sizeof(MappingType) * (cursize - mid_index-1));
+  int cursize = GetMaxSize() + 1;
+  int mid_index = cursize / 2;
+  memcpy(reinterpret_cast<void *>(array_), reinterpret_cast<void *>(mid_array), sizeof(MappingType) * mid_index);
+  memcpy(reinterpret_cast<void *>(page.array_ + 1), reinterpret_cast<void *>(mid_array + mid_index + 1),
+         sizeof(MappingType) * (cursize - mid_index - 1));
   page.SetValueAt(0, mid_array[mid_index].second);
   upkey = mid_array[mid_index].first;
   SetSize(mid_index);
-  page.SetSize(cursize-mid_index);
+  page.SetSize(cursize - mid_index);
   return 0;
 }
 INDEX_TEMPLATE_ARGUMENTS
 auto B_PLUS_TREE_INTERNAL_PAGE_TYPE::Remove(int index) -> int {
-  //index has been checked before;
-  if(index != GetSize()-1){
-    auto cp_size = sizeof(MappingType)*(GetSize()-index-1);
-    memmove(reinterpret_cast<void*>(array_+index), reinterpret_cast<void*>(array_+index+1), cp_size);
+  // index has been checked before;
+  if (index != GetSize() - 1) {
+    auto cp_size = sizeof(MappingType) * (GetSize() - index - 1);
+    memmove(reinterpret_cast<void *>(array_ + index), reinterpret_cast<void *>(array_ + index + 1), cp_size);
   }
   IncreaseSize(-1);
-  if(GetSize() < GetMinSize()){
+  if (GetSize() < GetMinSize()) {
     return 1;
   }
   return 0;
 }
 INDEX_TEMPLATE_ARGUMENTS
-auto B_PLUS_TREE_INTERNAL_PAGE_TYPE::Merge(BPlusTreeInternalPage &page_p, int index, BPlusTreeInternalPage &page_bro) -> int {
+auto B_PLUS_TREE_INTERNAL_PAGE_TYPE::Merge(BPlusTreeInternalPage &page_p, int index, BPlusTreeInternalPage &page_bro)
+    -> int {
   auto mysize = GetSize();
-  array_[mysize].first= page_p.array_[index].first;
-  array_[mysize].second= page_bro.array_[0].second;
+  array_[mysize].first = page_p.array_[index].first;
+  array_[mysize].second = page_bro.array_[0].second;
   auto brosize = page_bro.GetSize();
-  if(brosize > 1){
-    auto cp_size = sizeof(MappingType)*(brosize-1);
-    memcpy(reinterpret_cast<void*>(array_ + mysize + 1), reinterpret_cast<void*>(page_bro.array_+1),cp_size);
+  if (brosize > 1) {
+    auto cp_size = sizeof(MappingType) * (brosize - 1);
+    memcpy(reinterpret_cast<void *>(array_ + mysize + 1), reinterpret_cast<void *>(page_bro.array_ + 1), cp_size);
   }
   IncreaseSize(brosize);
   return 0;
