@@ -30,12 +30,12 @@ auto INDEXITERATOR_TYPE::operator*() -> const MappingType & {
 
 INDEX_TEMPLATE_ARGUMENTS
 auto INDEXITERATOR_TYPE::operator++() -> INDEXITERATOR_TYPE & {
-    if(++index_ > page_->GetSize()){
-        if(page_->GetNextPageId() != INVALID_PAGE_ID){
-            index_ = 0;
-            page_
-        }
-    }
+    // if(++index_ > page_->GetSize()){
+    //     if(page_->GetNextPageId() != INVALID_PAGE_ID){
+    //         index_ = 0;
+    //         page_
+    //     }
+    // }
     return *this;
 }
 

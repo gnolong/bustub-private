@@ -289,8 +289,8 @@ void BPLUSTREE_TYPE::Remove(const KeyType &key, Transaction *txn) {
     auto ppage_bro1 = wguard_bro1.template AsMut<LeafPage>();
     auto size_bro1 = ppage_bro1->GetSize();
     if(size_bro1 > ppage_bro1->GetMinSize()){
-      auto key_bro1 = ppage_bro1->KeyAt(size_bro1);
-      ppage_lf->Insert(key_bro1,ppage_bro1->ValueAt(size_bro1),comparator_);
+      auto key_bro1 = ppage_bro1->KeyAt(size_bro1-1);
+      ppage_lf->Insert(key_bro1,ppage_bro1->ValueAt(size_bro1-1),comparator_);
       ppage_p1->SetKeyAt(idx_2cur-1,key_bro1);
       ppage_bro1->IncreaseSize(-1);
       return;
@@ -325,13 +325,13 @@ void BPLUSTREE_TYPE::Remove(const KeyType &key, Transaction *txn) {
     idx_del = idx_2cur;
   }
   else{
-    //page mid
+    //leaf page mid
     auto wguard_bro1 = bpm_->FetchPageWrite(ppage_p1->ValueAt(idx_2cur-2));
     auto ppage_bro1 = wguard_bro1.template AsMut<LeafPage>();
     auto size_bro1 = ppage_bro1->GetSize();
     if(size_bro1 > ppage_bro1->GetMinSize()){
-      auto key_bro1 = ppage_bro1->KeyAt(size_bro1);
-      ppage_lf->Insert(key_bro1,ppage_bro1->ValueAt(size_bro1),comparator_);
+      auto key_bro1 = ppage_bro1->KeyAt(size_bro1-1);
+      ppage_lf->Insert(key_bro1,ppage_bro1->ValueAt(size_bro1-1),comparator_);
       ppage_p1->SetKeyAt(idx_2cur-1,key_bro1);
       ppage_bro1->IncreaseSize(-1);
       return;
@@ -394,10 +394,11 @@ void BPLUSTREE_TYPE::Remove(const KeyType &key, Transaction *txn) {
       auto ppage_bro1 = wguard_bro1.template AsMut<InternalPage>();
       auto size_bro1 = ppage_bro1->GetSize();
       if(size_bro1 > ppage_bro1->GetMinSize()){
-        auto key_bro1 = ppage_bro1->KeyAt(size_bro1);
-        auto value_bro1 = ppage_bro1->ValueAt(size_bro1);
+        auto key_bro1 = ppage_bro1->KeyAt(size_bro1-1);
+        auto value_bro1 = ppage_bro1->ValueAt(size_bro1-1);
         ppage_bro1->IncreaseSize(-1);
-        ppage->Insert(0, key_bro1, value_bro1);
+        ppage->Insert(1, ppage_p1->KeyAt(idx_2cur-1), ppage->ValueAt(0));
+        ppage->SetValueAt(0, value_bro1);
         ppage_p1->SetKeyAt(idx_2cur-1,key_bro1);
         return;
       }
@@ -430,15 +431,16 @@ void BPLUSTREE_TYPE::Remove(const KeyType &key, Transaction *txn) {
       idx_del = idx_2cur;
     }
     else{
-      //page mid
+      //internal page mid
       auto wguard_bro1 = bpm_->FetchPageWrite(ppage_p1->ValueAt(idx_2cur-2));
       auto ppage_bro1 = wguard_bro1.template AsMut<InternalPage>();
       auto size_bro1 = ppage_bro1->GetSize();
       if(size_bro1 > ppage_bro1->GetMinSize()){
-        auto key_bro1 = ppage_bro1->KeyAt(size_bro1);
-        auto value_bro1 = ppage_bro1->ValueAt(size_bro1);
+        auto key_bro1 = ppage_bro1->KeyAt(size_bro1-1);
+        auto value_bro1 = ppage_bro1->ValueAt(size_bro1-1);
         ppage_bro1->IncreaseSize(-1);
-        ppage->Insert(0, key_bro1, value_bro1);
+        ppage->Insert(1, ppage_p1->KeyAt(idx_2cur-1), ppage->ValueAt(0));
+        ppage->SetValueAt(0, value_bro1);
         ppage_p1->SetKeyAt(idx_2cur-1,key_bro1);
         return;
       }

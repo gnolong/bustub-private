@@ -62,10 +62,10 @@ auto B_PLUS_TREE_INTERNAL_PAGE_TYPE::Insert(int index, const KeyType &key, const
   if(GetSize() >= GetMaxSize()){
     return -1;
   }
-  char tmp[BUSTUB_PAGE_SIZE];
+  // char tmp[BUSTUB_PAGE_SIZE];
   int cp_size = sizeof(MappingType)*(GetSize()-index);
-  memcpy(tmp, reinterpret_cast<char*>(array_ + index), cp_size);
-  memcpy(reinterpret_cast<char*>(array_ + index + 1), tmp, cp_size);
+  // memcpy(tmp, reinterpret_cast<char*>(array_ + index), cp_size);
+  memmove(reinterpret_cast<char*>(array_ + index + 1), reinterpret_cast<char*>(array_ + index), cp_size);
   SetKeyAt(index, key);
   SetValueAt(index, value);
   IncreaseSize(1);
@@ -104,7 +104,7 @@ auto B_PLUS_TREE_INTERNAL_PAGE_TYPE::Remove(int index) -> int {
   //index has been checked before;
   if(index != GetSize()-1){
     auto cp_size = sizeof(MappingType)*(GetSize()-index-1);
-    memcpy(reinterpret_cast<void*>(array_+index), reinterpret_cast<void*>(array_+index+1), cp_size);
+    memmove(reinterpret_cast<void*>(array_+index), reinterpret_cast<void*>(array_+index+1), cp_size);
   }
   IncreaseSize(-1);
   if(GetSize() < GetMinSize()){

@@ -86,10 +86,10 @@ auto B_PLUS_TREE_LEAF_PAGE_TYPE::Insert(const KeyType &key, const ValueType &val
       return 1;
     }
     if(0 < res){
-      char tmp[BUSTUB_PAGE_SIZE];
+      // char tmp[BUSTUB_PAGE_SIZE];
       int cp_size = sizeof(MappingType)*(GetSize()-index);
-      memcpy(tmp, reinterpret_cast<char*>(array_ + index), cp_size);
-      memcpy(reinterpret_cast<char*>(array_ + index + 1), tmp, cp_size);
+      // memcpy(tmp, reinterpret_cast<char*>(array_ + index), cp_size);
+      memmove(reinterpret_cast<char*>(array_ + index + 1), reinterpret_cast<char*>(array_ + index), cp_size);
       break;
     }
   }
@@ -140,7 +140,8 @@ auto B_PLUS_TREE_LEAF_PAGE_TYPE::Remove(const KeyType &key, const KeyComparator 
     if(0 == res){
       if(index != mysize-1){
         int cp_size = sizeof(MappingType)*(GetSize()-index-1);
-        memcpy(reinterpret_cast<char*>(array_ + index), reinterpret_cast<char*>(array_ + index + 1), cp_size);
+        //同一段内存不要用memcpy
+        memmove(reinterpret_cast<void*>(array_ + index), reinterpret_cast<void*>(array_ + index + 1), cp_size);
       }
       IncreaseSize(-1);
       if(GetSize() < GetMinSize()){
