@@ -506,22 +506,22 @@ void BPLUSTREE_TYPE::Remove(const KeyType &key, Transaction *txn) {
 INDEX_TEMPLATE_ARGUMENTS
 auto BPLUSTREE_TYPE::Begin() -> INDEXITERATOR_TYPE {
   // std::cout << "use tree.Begin()" << '\n';
-  auto guard = bpm_->FetchPageWrite(header_page_id_);
+  auto guard = bpm_->FetchPageRead(header_page_id_);
   auto root_page = guard.As<BPlusTreeHeaderPage>();
   if (INVALID_PAGE_ID == root_page->root_page_id_) {
     return INDEXITERATOR_TYPE(nullptr, BUSTUB_PAGE_SIZE, bpm_);
   }
-  guard = bpm_->FetchPageWrite(root_page->root_page_id_);
-  auto ppage = guard.AsMut<InternalPage>();
+  guard = bpm_->FetchPageRead(root_page->root_page_id_);
+  auto ppage = guard.As<InternalPage>();
   if (0 == ppage->GetSize()) {
     return INDEXITERATOR_TYPE(nullptr, BUSTUB_PAGE_SIZE, bpm_);
   }
   while (!ppage->IsLeafPage()) {
-    guard = bpm_->FetchPageWrite(ppage->ValueAt(0));
-    ppage = guard.AsMut<InternalPage>();
+    guard = bpm_->FetchPageRead(ppage->ValueAt(0));
+    ppage = guard.As<InternalPage>();
   }
-  auto ppage_leaf = reinterpret_cast<LeafPage *>(ppage);
-  return INDEXITERATOR_TYPE(ppage_leaf, 0, bpm_);
+  auto ppage_leaf = reinterpret_cast<const LeafPage *>(ppage);
+  return INDEXITERATOR_TYPE(const_cast<LeafPage*>(ppage_leaf), 0, bpm_);
 }
 
 /*
@@ -532,13 +532,13 @@ auto BPLUSTREE_TYPE::Begin() -> INDEXITERATOR_TYPE {
 INDEX_TEMPLATE_ARGUMENTS
 auto BPLUSTREE_TYPE::Begin(const KeyType &key) -> INDEXITERATOR_TYPE {
   // std::cout << "use tree.Begin(key), key =" << key << '\n';
-  auto guard = bpm_->FetchPageWrite(header_page_id_);
-  auto root_page = guard.AsMut<BPlusTreeHeaderPage>();
+  auto guard = bpm_->FetchPageRead(header_page_id_);
+  auto root_page = guard.As<BPlusTreeHeaderPage>();
   if (INVALID_PAGE_ID == root_page->root_page_id_) {
     return INDEXITERATOR_TYPE(nullptr, BUSTUB_PAGE_SIZE, bpm_);
   }
-  guard = bpm_->FetchPageWrite(root_page->root_page_id_);
-  auto ppage = guard.AsMut<InternalPage>();
+  guard = bpm_->FetchPageRead(root_page->root_page_id_);
+  auto ppage = guard.As<InternalPage>();
   if (0 == ppage->GetSize()) {
     return INDEXITERATOR_TYPE(nullptr, BUSTUB_PAGE_SIZE, bpm_);
   }
@@ -548,14 +548,14 @@ auto BPLUSTREE_TYPE::Begin(const KeyType &key) -> INDEXITERATOR_TYPE {
     while (i < cursize && 0 <= comparator_(key, ppage->KeyAt(i))) {
       ++i;
     }
-    guard = bpm_->FetchPageWrite(ppage->ValueAt(i - 1));
-    ppage = guard.AsMut<InternalPage>();
+    guard = bpm_->FetchPageRead(ppage->ValueAt(i - 1));
+    ppage = guard.As<InternalPage>();
   }
-  auto ppage_leaf = reinterpret_cast<LeafPage *>(ppage);
+  auto ppage_leaf = reinterpret_cast<const LeafPage *>(ppage);
   auto cursize = ppage_leaf->GetSize();
   for (int i = 0; i < cursize; ++i) {
     if (0 == comparator_(key, ppage_leaf->KeyAt(i))) {
-      return INDEXITERATOR_TYPE(ppage_leaf, i, bpm_);
+      return INDEXITERATOR_TYPE(const_cast<LeafPage*>(ppage_leaf), i, bpm_);
     }
   }
   return INDEXITERATOR_TYPE(nullptr, BUSTUB_PAGE_SIZE, bpm_);
