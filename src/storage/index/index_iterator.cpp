@@ -35,7 +35,8 @@ auto INDEXITERATOR_TYPE::operator++() -> INDEXITERATOR_TYPE & {
   if (page_->GetNextPageId() != INVALID_PAGE_ID) {
     index_ = 0;
     auto guard = bpm_->FetchPageRead(page_->GetNextPageId());
-    page_ = const_cast<BPlusTreeLeafPage<KeyType, ValueType, KeyComparator>*>(guard.template As<const BPlusTreeLeafPage<KeyType, ValueType, KeyComparator>>());
+    page_ = const_cast<BPlusTreeLeafPage<KeyType, ValueType, KeyComparator> *>(
+        guard.template As<const BPlusTreeLeafPage<KeyType, ValueType, KeyComparator>>());
     return *this;
   }
   page_ = nullptr;
