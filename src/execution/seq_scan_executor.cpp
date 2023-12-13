@@ -11,13 +11,33 @@
 //===----------------------------------------------------------------------===//
 
 #include "execution/executors/seq_scan_executor.h"
+#include <memory>
+#include "storage/table/table_iterator.h"
 
 namespace bustub {
 
-SeqScanExecutor::SeqScanExecutor(ExecutorContext *exec_ctx, const SeqScanPlanNode *plan) : AbstractExecutor(exec_ctx) {}
+SeqScanExecutor::SeqScanExecutor(ExecutorContext *exec_ctx, const SeqScanPlanNode *plan) : 
+                        AbstractExecutor(exec_ctx),plan_(plan){}
 
-void SeqScanExecutor::Init() { throw NotImplementedException("SeqScanExecutor is not implemented"); }
+void SeqScanExecutor::Init() {
+    itr_ = std::make_unique<TableIterator>(exec_ctx_->GetCatalog()->GetTable(plan_->GetTableOid())->table_->MakeIterator());
+}
 
-auto SeqScanExecutor::Next(Tuple *tuple, RID *rid) -> bool { return false; }
+auto SeqScanExecutor::Next(Tuple *tuple, RID *rid) -> bool {
+  std::cout << "throught seqscan_executor" << '\n';
+  while(!itr_->IsEnd() && itr_->GetTuple().first.is_deleted_){
+    ++(*itr_);
+  }
+  if (itr_->IsEnd()) {
+    return false;
+  }
+  *tuple = std::move(itr_->GetTuple().second);
+  *rid = itr_->GetRID();
+  std::cout << "up_tuple_rid: " << rid->ToString();
+  std::cout << "up_tuple: " << tuple->ToString(&exec_ctx_->GetCatalog()->GetTable(plan_->GetTableOid())->schema_) << '\n';
+  ++(*itr_);
+  return true;
+
+}
 
 }  // namespace bustub

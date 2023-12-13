@@ -15,7 +15,7 @@ void FilterExecutor::Init() {
 
 auto FilterExecutor::Next(Tuple *tuple, RID *rid) -> bool {
   auto filter_expr = plan_->GetPredicate();
-
+  std::cout << "throght filer_executer" << '\n';
   while (true) {
     // Get the next tuple
     const auto status = child_executor_->Next(tuple, rid);
