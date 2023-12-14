@@ -521,7 +521,7 @@ auto BPLUSTREE_TYPE::Begin() -> INDEXITERATOR_TYPE {
     ppage = guard.As<InternalPage>();
   }
   auto ppage_leaf = reinterpret_cast<const LeafPage *>(ppage);
-  return INDEXITERATOR_TYPE(const_cast<LeafPage*>(ppage_leaf), 0, bpm_);
+  return INDEXITERATOR_TYPE(const_cast<LeafPage *>(ppage_leaf), 0, bpm_);
 }
 
 /*
@@ -555,7 +555,7 @@ auto BPLUSTREE_TYPE::Begin(const KeyType &key) -> INDEXITERATOR_TYPE {
   auto cursize = ppage_leaf->GetSize();
   for (int i = 0; i < cursize; ++i) {
     if (0 == comparator_(key, ppage_leaf->KeyAt(i))) {
-      return INDEXITERATOR_TYPE(const_cast<LeafPage*>(ppage_leaf), i, bpm_);
+      return INDEXITERATOR_TYPE(const_cast<LeafPage *>(ppage_leaf), i, bpm_);
     }
   }
   return INDEXITERATOR_TYPE(nullptr, BUSTUB_PAGE_SIZE, bpm_);
