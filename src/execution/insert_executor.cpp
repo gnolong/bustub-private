@@ -54,8 +54,8 @@ auto InsertExecutor::Next([[maybe_unused]] Tuple *tuple, RID *rid) -> bool {
     not_first_call_ = true;
     do{
         rid_t = table_info_->table_->InsertTuple(meta, child_tuple).value();
-        std::cout << "child_tuple_rid: " << rid_t.ToString();
-        std::cout << "child_tuple: " << child_tuple.ToString(&table_info_->schema_) << '\n';
+        std::cout << "  insert_child_tuple_rid: " << rid_t.ToString();
+        std::cout << "  insert_child_tuple: " << child_tuple.ToString(&table_info_->schema_) << '\n';
         int len = index_info_.size();
         if(0 != len){
             int i = 0;
