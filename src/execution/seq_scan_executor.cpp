@@ -24,7 +24,7 @@ void SeqScanExecutor::Init() {
 }
 
 auto SeqScanExecutor::Next(Tuple *tuple, RID *rid) -> bool {
-  std::cout << "throught seqscan_executor" << '\n';
+  // std::cout << "throught seqscan_executor" << '\n';
   while(!itr_->IsEnd() && itr_->GetTuple().first.is_deleted_){
     ++(*itr_);
   }
@@ -33,8 +33,8 @@ auto SeqScanExecutor::Next(Tuple *tuple, RID *rid) -> bool {
   }
   *tuple = std::move(itr_->GetTuple().second);
   *rid = itr_->GetRID();
-  std::cout << "  seqscan_up_tuple_rid: " << rid->ToString();
-  std::cout << "  seqscan_up_tuple: " << tuple->ToString(&exec_ctx_->GetCatalog()->GetTable(plan_->GetTableOid())->schema_) << '\n';
+  // std::cout << "  seqscan_up_tuple_rid: " << rid->ToString();
+  // std::cout << "  seqscan_up_tuple: " << tuple->ToString(&exec_ctx_->GetCatalog()->GetTable(plan_->GetTableOid())->schema_) << '\n';
   ++(*itr_);
   return true;
 
