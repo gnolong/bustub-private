@@ -17,6 +17,7 @@
 #include <memory>
 #include <type_traits>
 #include <utility>
+#include <vector>
 
 #include "common/exception.h"
 #include "common/util/hash_util.h"
@@ -48,7 +49,7 @@ struct HashjoinKey {
 /** HashjoinValue represents a value for each of the running Joins */
 struct HashjoinValue {
   /** The Join values */
-  std::vector<Value> values_;
+  std::vector<std::vector<Value>> valuess_;
 };
 
 }
@@ -83,10 +84,11 @@ class SimpleJoinHashTable {
    * @param agg_key the key to be inserted
    * @param agg_val the value to be inserted
    */
-  void Insert(const HashjoinKey &key, const HashjoinValue &val) {
-    if (ht_.count(key) == 0) {
-      
-    }
+  void Insert(const HashjoinKey &key, const std::vector<Value> &values) {
+    ht_[key].valuess_.push_back(values);
+  }
+  auto Count(const HashjoinKey &key) -> int{
+    return ht_.count(key);
   }
 
   /**
@@ -187,7 +189,7 @@ class HashJoinExecutor : public AbstractExecutor {
   }
 
   /** @return The tuple as an JoinValue */
-  auto MakeJoinValue(const Tuple *tuple, const JType type) -> HashjoinValue {
+  auto MakeJoinValue(const Tuple *tuple, const JType type) -> std::vector<Value> {
     std::vector<Value> vals;
     if(type == JType::left){
       auto schema = plan_->GetLeftPlan()->OutputSchema();
@@ -203,7 +205,7 @@ class HashJoinExecutor : public AbstractExecutor {
         vals.emplace_back(tuple->GetValue(&schema, i));
       }
     }
-    return {vals};
+    return vals;
   }
   /** The NestedLoopJoin plan node to be executed. */
   const HashJoinPlanNode *plan_;
@@ -212,9 +214,9 @@ class HashJoinExecutor : public AbstractExecutor {
 
   std::unique_ptr<AbstractExecutor> right_child_;
 
-  SimpleJoinHashTable lft_ht_{};
+  SimpleJoinHashTable aht_{};
 
-  SimpleJoinHashTable::Iterator lft_itr_;
+  SimpleJoinHashTable::Iterator aht_itr_;
 
   // SimpleJoinHashTable rt_ht_;
 

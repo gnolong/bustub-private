@@ -11,6 +11,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "execution/executors/hash_join_executor.h"
+#include "binder/table_ref/bound_join_ref.h"
 #include "type/value_factory.h"
 
 namespace bustub {
@@ -19,7 +20,7 @@ HashJoinExecutor::HashJoinExecutor(ExecutorContext *exec_ctx, const HashJoinPlan
                                    std::unique_ptr<AbstractExecutor> &&left_child,
                                    std::unique_ptr<AbstractExecutor> &&right_child)
     : AbstractExecutor(exec_ctx), plan_(plan), left_child_(std::move(left_child)), 
-      right_child_(std::move(right_child)), lft_itr_(lft_ht_.End()), itr_(valuess_.end()){
+      right_child_(std::move(right_child)), aht_itr_(aht_.End()), itr_(valuess_.end()){
   if (plan->GetJoinType() != JoinType::LEFT && plan->GetJoinType() != JoinType::INNER) {
     // Note for 2023 Spring: You ONLY need to implement left join and inner join.
     throw bustub::NotImplementedException(fmt::format("join type {} not supported", plan->GetJoinType()));
@@ -28,7 +29,9 @@ HashJoinExecutor::HashJoinExecutor(ExecutorContext *exec_ctx, const HashJoinPlan
 
 void HashJoinExecutor::Init() {
   left_child_->Init();
+  right_child_->Init();
   itr_ = valuess_.begin();
+  std::cout << "hashjoin executor plan" << plan_->ToString() << '\n';
 }
 
 auto HashJoinExecutor::Next(Tuple *tuple, RID *rid) -> bool {
@@ -46,7 +49,17 @@ auto HashJoinExecutor::Next(Tuple *tuple, RID *rid) -> bool {
   Tuple left_tuple{};
   Tuple right_tuple{};
   RID rid_t{};
-  if(!left_child_->Next(&left_tuple, &rid_t)){
+  while(!left_child_->Next(&left_tuple, &rid_t)){
+    return false;
+  }
+  int cnt = 0;
+  while(right_child_->Next(&right_tuple, &rid_t)){
+    ++cnt;
+    auto key = MakeJoinKey(&right_tuple, JType::right);
+    auto val = MakeJoinValue(&right_tuple, JType::right);
+    aht_.Insert(key,val);
+  }
+  if(0 == cnt){
     return false;
   }
     auto schema_lft = plan_->GetLeftPlan()->OutputSchema();
@@ -55,78 +68,54 @@ auto HashJoinExecutor::Next(Tuple *tuple, RID *rid) -> bool {
     std::vector<Value> values_null;
     bool null_done{false};
     do{
-      std::vector<Value> values_left;
-      bool left_done{false};
       auto len_lft = schema_lft.GetColumnCount();
       auto len_rt = schema_rt.GetColumnCount();
-      bool joined{false};
-      right_child_->Init();
-      while(right_child_->Next(&right_tuple, &rid_t)){
-        auto val = plan_->Predicate()->EvaluateJoin(&left_tuple, schema_lft, 
-                                          &right_tuple, schema_rt);
-        if(!val.IsNull() && val.GetAs<bool>()){
-          joined = true;
-          std::vector<Value> values;
-          values.reserve(len_lft + len_rt);
-          if(!left_done){
-            for(uint32_t i = 0; i < len_lft; ++i){
-              values_left.push_back(left_tuple.GetValue(&schema_lft, i));
-            left_done = true;
-          }
-          }
-          values.insert(values.end(),values_left.begin(), values_left.end());
-          for(uint32_t i = 0; i < len_rt; ++i){
-            values.push_back(right_tuple.GetValue(&schema_rt, i));
-          }
-          valuess_.push_back(std::move(values));
-        }                                 
+      auto key_left = MakeJoinKey(&left_tuple, JType::left);
+      std::vector<Value> values;
+      values.reserve(len_lft + len_rt);
+      for(uint32_t i = 0; i < len_lft; ++i){
+        values.push_back(left_tuple.GetValue(&schema_lft, i));
       }
-      if(!joined){
+      int size = values.size();
+      if(aht_.Count(key_left) != 0){
+        auto & valss = aht_[key_left].valuess_;
+        for(const auto & vals : valss){
+          values.insert(values.end(), vals.begin(), vals.end());
+          valuess_.push_back(values);
+          values.resize(size);
+        }
+      }else{
         if(!null_done){
+          null_done = true;
           for(uint32_t i = 0; i < len_rt; ++i){
             values_null.push_back(ValueFactory::GetNullValueByType(schema_rt.GetColumn(i).GetType()));
           }
-          null_done = true;
         }
-        std::vector<Value> values;
-        values.reserve(len_lft + len_rt);
-        for(uint32_t i = 0; i < len_lft; ++i){
-          values.push_back(left_tuple.GetValue(&schema_lft, i));
-        }
-        values.insert(values.end(),values_null.begin(), values_null.end());
-        valuess_.push_back(std::move(values));
+        values.insert(values.end(), values_null.begin(), values_null.end());
+        valuess_.push_back(values);
       }
     }while(left_child_->Next(&left_tuple, &rid_t));
-    right_child_->Init();
   }
   else if(plan_->GetJoinType() == JoinType::INNER){
     do{
-      std::vector<Value> values_left;
-      bool left_done{false};
       auto len_lft = schema_lft.GetColumnCount();
       auto len_rt = schema_rt.GetColumnCount();
-      right_child_->Init();
-      while(right_child_->Next(&right_tuple, &rid_t)){
-        auto val = plan_->Predicate()->EvaluateJoin(&left_tuple, schema_lft, 
-                                          &right_tuple, schema_rt);
-        if(!val.IsNull() && val.GetAs<bool>()){
-          std::vector<Value> values;
-          values.reserve(len_lft + len_rt);
-          if(!left_done){
-            for(uint32_t i = 0; i < len_lft; ++i){
-              values_left.push_back(left_tuple.GetValue(&schema_lft, i));
-            left_done = true;
-          }
-          }
-          values.insert(values.end(),values_left.begin(), values_left.end());
-          for(uint32_t i = 0; i < len_rt; ++i){
-            values.push_back(right_tuple.GetValue(&schema_rt, i));
-          }
-          valuess_.push_back(std::move(values));
-        }                                 
+      auto key_left = MakeJoinKey(&left_tuple, JType::left);
+      std::vector<Value> values;
+      values.reserve(len_lft + len_rt);
+      for(uint32_t i = 0; i < len_lft; ++i){
+        values.push_back(left_tuple.GetValue(&schema_lft, i));
+      }
+      int size = values.size();
+      if(aht_.Count(key_left) != 0){
+        auto & valss = aht_[key_left].valuess_;
+        for(const auto & vals : valss){
+          values.insert(values.end(), vals.begin(), vals.end());
+          valuess_.push_back(values);
+          values.resize(size);
+        }
       }
     }while(left_child_->Next(&left_tuple, &rid_t));
-    right_child_->Init();
   }
   itr_ = valuess_.begin();
   if(itr_ == valuess_.end()){
