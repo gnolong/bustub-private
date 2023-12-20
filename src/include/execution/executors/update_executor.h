@@ -66,7 +66,7 @@ class UpdateExecutor : public AbstractExecutor {
   /** The child executor to obtain value from */
   std::unique_ptr<AbstractExecutor> child_executor_;
 
-  std::vector<IndexInfo*> index_info_;
+  std::vector<IndexInfo *> index_info_;
 
   bool not_first_call_{false};
 };

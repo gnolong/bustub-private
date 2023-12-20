@@ -31,6 +31,7 @@ namespace bustub {
 class TopNExecutor : public AbstractExecutor {
   using PAIR = std::pair<std::vector<Value>, std::vector<Value>>;
   using HEAP = std::priority_queue<PAIR>;
+
  public:
   /**
    * Construct a new TopNExecutor instance.

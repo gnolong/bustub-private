@@ -64,7 +64,7 @@ class DeleteExecutor : public AbstractExecutor {
 
   const TableInfo *table_info_;
 
-  std::vector<IndexInfo*> index_info_;
+  std::vector<IndexInfo *> index_info_;
 
   bool not_first_call_{false};
 };

@@ -12,8 +12,9 @@
 
 #pragma once
 
+#include <memory>
+#include <utility>
 #include <vector>
-
 #include "catalog/catalog.h"
 #include "common/rid.h"
 #include "execution/executor_context.h"
@@ -48,9 +49,9 @@ class IndexScanExecutor : public AbstractExecutor {
   /** The index scan plan node to be executed. */
   const IndexScanPlanNode *plan_;
 
-  IndexInfo* index_info_;
+  IndexInfo *index_info_;
 
-  TableInfo* table_info_;
+  TableInfo *table_info_;
 
   std::unique_ptr<BPlusTreeIndexIteratorForTwoIntegerColumn> itr_{nullptr};
 };

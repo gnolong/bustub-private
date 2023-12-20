@@ -16,9 +16,9 @@
 #include <cstdint>
 #include <memory>
 #include <type_traits>
+#include <unordered_map>
 #include <utility>
 #include <vector>
-
 #include "common/exception.h"
 #include "common/util/hash_util.h"
 #include "execution/executor_context.h"
@@ -52,7 +52,7 @@ struct HashjoinValue {
   std::vector<std::vector<Value>> valuess_;
 };
 
-}
+}  // namespace bustub
 namespace std {
 
 /** Implements std::hash on HashjoinKey */
@@ -72,7 +72,6 @@ struct hash<bustub::HashjoinKey> {
 }  // namespace std
 namespace bustub {
 
-
 /**
  * A simplified hash table that has all the necessary functionality for Joins.
  */
@@ -84,12 +83,8 @@ class SimpleJoinHashTable {
    * @param agg_key the key to be inserted
    * @param agg_val the value to be inserted
    */
-  void Insert(const HashjoinKey &key, const std::vector<Value> &values) {
-    ht_[key].valuess_.push_back(values);
-  }
-  auto Count(const HashjoinKey &key) -> int{
-    return ht_.count(key);
-  }
+  void Insert(const HashjoinKey &key, const std::vector<Value> &values) { ht_[key].valuess_.push_back(values); }
+  auto Count(const HashjoinKey &key) -> int { return ht_.count(key); }
 
   /**
    * Clear the hash table
@@ -131,14 +126,12 @@ class SimpleJoinHashTable {
   /** @return Iterator to the end of the hash table */
   auto End() -> Iterator { return Iterator{ht_.cend()}; }
 
-  auto operator[](const HashjoinKey& key) -> HashjoinValue&{
-    return ht_[key];
-  }
+  auto operator[](const HashjoinKey &key) -> HashjoinValue & { return ht_[key]; }
+
  private:
   /** The hash table is just a map from Join keys to Join values */
   std::unordered_map<HashjoinKey, HashjoinValue> ht_{};
 };
-
 
 /**
  * HashJoinExecutor executes a nested-loop JOIN on two tables.
@@ -171,16 +164,15 @@ class HashJoinExecutor : public AbstractExecutor {
 
  private:
   /** @return The tuple as an JoinKey */
-  enum JType {left, right};
+  enum JType { left, right };
 
   auto MakeJoinKey(const Tuple *tuple, const JType type) -> HashjoinKey {
     std::vector<Value> keys;
-    if(type == JType::left){
+    if (type == JType::left) {
       for (const auto &expr : plan_->LeftJoinKeyExpressions()) {
         keys.emplace_back(expr->Evaluate(tuple, left_child_->GetOutputSchema()));
       }
-    }
-    else if(type == JType::right){
+    } else if (type == JType::right) {
       for (const auto &expr : plan_->RightJoinKeyExpressions()) {
         keys.emplace_back(expr->Evaluate(tuple, right_child_->GetOutputSchema()));
       }
@@ -191,17 +183,17 @@ class HashJoinExecutor : public AbstractExecutor {
   /** @return The tuple as an JoinValue */
   auto MakeJoinValue(const Tuple *tuple, const JType type) -> std::vector<Value> {
     std::vector<Value> vals;
-    if(type == JType::left){
+    if (type == JType::left) {
       auto schema = plan_->GetLeftPlan()->OutputSchema();
       auto len = schema.GetColumnCount();
-      for(uint32_t i = 0; i < len; ++i){
+      for (uint32_t i = 0; i < len; ++i) {
         vals.emplace_back(tuple->GetValue(&schema, i));
       }
     }
-    if(type == JType::right){
+    if (type == JType::right) {
       auto schema = plan_->GetRightPlan()->OutputSchema();
       auto len = schema.GetColumnCount();
-      for(uint32_t i = 0; i < len; ++i){
+      for (uint32_t i = 0; i < len; ++i) {
         vals.emplace_back(tuple->GetValue(&schema, i));
       }
     }
@@ -223,7 +215,7 @@ class HashJoinExecutor : public AbstractExecutor {
   // SimpleJoinHashTable::Iterator rt_itr_;
 
   std::vector<std::vector<Value>> valuess_{};
-  
+
   std::vector<std::vector<Value>>::iterator itr_;
 
   bool not_first_call_{false};

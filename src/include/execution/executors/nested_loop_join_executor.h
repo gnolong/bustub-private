@@ -62,7 +62,7 @@ class NestedLoopJoinExecutor : public AbstractExecutor {
   std::unique_ptr<AbstractExecutor> right_child_;
 
   std::vector<std::vector<Value>> valuess_{};
-  
+
   std::vector<std::vector<Value>>::iterator itr_;
 
   bool not_first_call_{false};

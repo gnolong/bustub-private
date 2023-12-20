@@ -13,8 +13,8 @@
 #pragma once
 
 #include <memory>
+#include <utility>
 #include <vector>
-
 #include "execution/executor_context.h"
 #include "execution/executors/abstract_executor.h"
 #include "execution/plans/seq_scan_plan.h"
@@ -55,8 +55,8 @@ class SortExecutor : public AbstractExecutor {
 
   std::unique_ptr<AbstractExecutor> child_;
 
-  std::vector<std::pair<std::vector<Value>,std::vector<Value>>> valuess_;
-  std::vector<std::pair<std::vector<Value>,std::vector<Value>>>::iterator itr_;
+  std::vector<std::pair<std::vector<Value>, std::vector<Value>>> valuess_;
+  std::vector<std::pair<std::vector<Value>, std::vector<Value>>>::iterator itr_;
   bool not_first_call_{false};
 };
 }  // namespace bustub
