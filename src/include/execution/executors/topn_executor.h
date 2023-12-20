@@ -13,6 +13,7 @@
 #pragma once
 
 #include <memory>
+#include <queue>
 #include <utility>
 #include <vector>
 
@@ -28,6 +29,8 @@ namespace bustub {
  * The TopNExecutor executor executes a topn.
  */
 class TopNExecutor : public AbstractExecutor {
+  using PAIR = std::pair<std::vector<Value>, std::vector<Value>>;
+  using HEAP = std::priority_queue<PAIR>;
  public:
   /**
    * Construct a new TopNExecutor instance.
@@ -63,5 +66,13 @@ class TopNExecutor : public AbstractExecutor {
   const TopNPlanNode *plan_;
   /** The child executor from which tuples are obtained */
   std::unique_ptr<AbstractExecutor> child_executor_;
+
+  std::vector<std::vector<Value>> valuess_;
+
+  std::vector<std::vector<Value>>::reverse_iterator itr_;
+
+  size_t n_{0};
+
+  bool not_first_call_{false};
 };
 }  // namespace bustub
