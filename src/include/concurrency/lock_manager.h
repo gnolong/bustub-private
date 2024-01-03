@@ -203,6 +203,9 @@ class LockManager {
             request_queue_.erase(lrq);
             return 1;
           }
+          if(COMPATIBLE_MATRIX[static_cast<int>((*lrq)->lock_mode_)][j]){
+            return 2;
+          }
           throw TransactionAbortException(txn_id, AbortReason::INCOMPATIBLE_UPGRADE);
          
         }
@@ -250,6 +253,9 @@ class LockManager {
             delete *lrq;
             request_queue_.erase(lrq);
             return 1;
+          }
+          if(COMPATIBLE_MATRIX[static_cast<int>((*lrq)->lock_mode_)][j]){
+            return 2;
           }
           throw TransactionAbortException(txn_id, AbortReason::INCOMPATIBLE_UPGRADE);
         }

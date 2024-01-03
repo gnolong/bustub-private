@@ -311,8 +311,8 @@ auto LockManager::UnlockRow(Transaction *txn, const table_oid_t &oid, const RID 
       rq_row.erase(itr);
       ptr_row->cv_.notify_all();
       ulq_row.unlock();
-      
-      if((*(txn->GetSharedRowLockSet()))[oid].empty() && (*(txn->GetExclusiveRowLockSet()))[oid].empty()){
+
+      if((mode_t == LockMode::SHARED && (*(txn->GetSharedRowLockSet()))[oid].empty()) || (mode_t == LockMode::EXCLUSIVE &&(*(txn->GetExclusiveRowLockSet()))[oid].empty())){
         if(mode_t == LockMode::SHARED){
           mode_t = LockMode::INTENTION_SHARED;
         }
@@ -320,7 +320,7 @@ auto LockManager::UnlockRow(Transaction *txn, const table_oid_t &oid, const RID 
         std::unique_lock<std::mutex> ulq(ptr->latch_);
         auto & rq = ptr->request_queue_;
         for(auto itr_table = rq.begin(); itr_table != rq.end(); ++itr_table){
-          if((*itr_table)->granted_ && (*itr_table)->txn_id_ == txnid && (*itr)->lock_mode_ == mode_t){
+          if((*itr_table)->granted_ && (*itr_table)->txn_id_ == txnid && (*itr_table)->lock_mode_ == mode_t){
 
             switch (mode_t) {
               case LockMode::INTENTION_SHARED:{
@@ -345,8 +345,8 @@ auto LockManager::UnlockRow(Transaction *txn, const table_oid_t &oid, const RID 
 
           }
         }
-        txn->SetState(TransactionState::ABORTED);
-        throw TransactionAbortException(txnid, AbortReason::TABLE_UNLOCKED_BEFORE_UNLOCKING_ROWS); 
+        // txn->SetState(TransactionState::ABORTED);
+        // throw TransactionAbortException(txnid, AbortReason::TABLE_UNLOCKED_BEFORE_UNLOCKING_ROWS); 
       }
     }
   }
