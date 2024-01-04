@@ -35,22 +35,18 @@ class TransactionManager;
  */
 class LockManager {
  public:
-  enum class LockMode {INTENTION_SHARED, INTENTION_EXCLUSIVE, SHARED, SHARED_INTENTION_EXCLUSIVE, EXCLUSIVE};
-  static constexpr bool COMPATIBLE_MATRIX[5][5] = {
-      {true, true, true, true, false},
-      {true, true, false, false, false},
-      {true, false, true, false, false},
-      {true, false, false, false, false},
-      {false, false, false, false, false}
-  };
-  
-  static constexpr bool UPGRADE_MATRIX[5][5] = {
-      {false, true, true, true, true},
-      {false, false, false, true, true},
-      {false, false, false, true, true},
-      {false, false, false, false, true},
-      {false, false, false, false, false}
-  };
+  enum class LockMode { INTENTION_SHARED, INTENTION_EXCLUSIVE, SHARED, SHARED_INTENTION_EXCLUSIVE, EXCLUSIVE };
+  static constexpr bool COMPATIBLE_MATRIX[5][5] = {{true, true, true, true, false},
+                                                   {true, true, false, false, false},
+                                                   {true, false, true, false, false},
+                                                   {true, false, false, false, false},
+                                                   {false, false, false, false, false}};
+
+  static constexpr bool UPGRADE_MATRIX[5][5] = {{false, true, true, true, true},
+                                                {false, false, false, true, true},
+                                                {false, false, false, true, true},
+                                                {false, false, false, false, true},
+                                                {false, false, false, false, false}};
   /**
    * Structure to hold a lock request.
    * This could be a lock request on a table OR a row.
@@ -78,7 +74,7 @@ class LockManager {
   class LockRequestQueue {
    public:
     /** List of lock requests for the same resource (table or row) */
-    std::list<LockRequest*> request_queue_;//change ptr type to LockRequest by wl
+    std::list<LockRequest *> request_queue_;  // change ptr type to LockRequest by wl
     /** For notifying blocked transactions on this rid */
     std::condition_variable cv_;
     /** txn_id of an upgrading transaction (if any) */
@@ -86,16 +82,17 @@ class LockManager {
     /** coordination */
     std::mutex latch_;
 
-    auto GrantLock(Transaction *txn, LockRequest* lock_req)-> bool{
-      if(upgrading_ != INVALID_TXN_ID && upgrading_ != lock_req->txn_id_){
-          return false;
+    auto GrantLock(Transaction *txn, LockRequest *lock_req) -> bool {
+      if (upgrading_ != INVALID_TXN_ID && upgrading_ != lock_req->txn_id_) {
+        return false;
       }
-      for(auto &lrq : request_queue_){
-        if(lrq->granted_ && !COMPATIBLE_MATRIX[static_cast<int>(lrq->lock_mode_)][static_cast<int>(lock_req->lock_mode_)]){
+      for (auto &lrq : request_queue_) {
+        if (lrq->granted_ &&
+            !COMPATIBLE_MATRIX[static_cast<int>(lrq->lock_mode_)][static_cast<int>(lock_req->lock_mode_)]) {
           return false;
         }
       }
-      if(upgrading_ == lock_req->txn_id_){
+      if (upgrading_ == lock_req->txn_id_) {
         upgrading_ = INVALID_TXN_ID;
       }
       switch (lock_req->lock_mode_) {
@@ -118,16 +115,17 @@ class LockManager {
       lock_req->granted_ = true;
       return true;
     }
-    auto GrantLock(Transaction *txn, LockRequest* lock_req, int a)-> bool{
-      if(upgrading_ != INVALID_TXN_ID && upgrading_ != lock_req->txn_id_){
-          return false;
+    auto GrantLock(Transaction *txn, LockRequest *lock_req, int a) -> bool {
+      if (upgrading_ != INVALID_TXN_ID && upgrading_ != lock_req->txn_id_) {
+        return false;
       }
-      for(auto &lrq : request_queue_){
-        if(lrq->granted_ && !COMPATIBLE_MATRIX[static_cast<int>(lrq->lock_mode_)][static_cast<int>(lock_req->lock_mode_)]){
+      for (auto &lrq : request_queue_) {
+        if (lrq->granted_ &&
+            !COMPATIBLE_MATRIX[static_cast<int>(lrq->lock_mode_)][static_cast<int>(lock_req->lock_mode_)]) {
           return false;
         }
       }
-      if(upgrading_ == lock_req->txn_id_){
+      if (upgrading_ == lock_req->txn_id_) {
         upgrading_ = INVALID_TXN_ID;
       }
       switch (lock_req->lock_mode_) {
@@ -148,37 +146,39 @@ class LockManager {
     auto CheckUpgrade(Transaction *txn, LockMode lock_mode, const table_oid_t &oid) -> int {
       switch (lock_mode) {
         case LockMode::INTENTION_SHARED:
-          if(txn->IsTableIntentionSharedLocked(oid)){
+          if (txn->IsTableIntentionSharedLocked(oid)) {
             return 0;
           }
           break;
         case LockMode::INTENTION_EXCLUSIVE:
-          if(txn->IsTableIntentionExclusiveLocked(oid)){
+          if (txn->IsTableIntentionExclusiveLocked(oid)) {
             return 0;
           }
           break;
         case LockMode::SHARED:
-          if(txn->IsTableSharedLocked(oid)){
+          if (txn->IsTableSharedLocked(oid)) {
             return 0;
           }
           break;
         case LockMode::SHARED_INTENTION_EXCLUSIVE:
-          if(txn->IsTableSharedIntentionExclusiveLocked(oid)){
+          if (txn->IsTableSharedIntentionExclusiveLocked(oid)) {
             return 0;
           }
           break;
         case LockMode::EXCLUSIVE:
-          if(txn->IsTableExclusiveLocked(oid)){
+          if (txn->IsTableExclusiveLocked(oid)) {
             return 0;
           }
           break;
       }
       int j = static_cast<int>(lock_mode);
       auto txn_id = txn->GetTransactionId();
-      for(auto lrq = request_queue_.begin(); lrq != request_queue_.end(); ++lrq){
-        if((*lrq)->granted_ && (*lrq)->txn_id_ == txn_id){
-          if(UPGRADE_MATRIX[static_cast<int>((*lrq)->lock_mode_)][j]){
-            if(upgrading_ != INVALID_TXN_ID){
+      for (auto lrq = request_queue_.begin(); lrq != request_queue_.end(); ++lrq) {
+        if ((*lrq)->granted_ && (*lrq)->txn_id_ == txn_id) {
+          if (UPGRADE_MATRIX[static_cast<int>((*lrq)->lock_mode_)][j]) {
+            if (upgrading_ != INVALID_TXN_ID) {
+              txn->SetState(TransactionState::ABORTED);
+              txn->UnlockTxn();
               throw TransactionAbortException(txn_id, AbortReason::UPGRADE_CONFLICT);
             }
             upgrading_ = txn_id;
@@ -203,11 +203,9 @@ class LockManager {
             request_queue_.erase(lrq);
             return 1;
           }
-          if(COMPATIBLE_MATRIX[static_cast<int>((*lrq)->lock_mode_)][j]){
-            return 2;
-          }
+          txn->SetState(TransactionState::ABORTED);
+          txn->UnlockTxn();
           throw TransactionAbortException(txn_id, AbortReason::INCOMPATIBLE_UPGRADE);
-         
         }
       }
       return 2;
@@ -215,12 +213,12 @@ class LockManager {
     auto CheckUpgrade(Transaction *txn, LockMode lock_mode, const table_oid_t &oid, const RID &rid) -> int {
       switch (lock_mode) {
         case LockMode::SHARED:
-          if(txn->IsRowSharedLocked(oid, rid)){
+          if (txn->IsRowSharedLocked(oid, rid)) {
             return 0;
           }
           break;
         case LockMode::EXCLUSIVE:
-          if(txn->IsRowExclusiveLocked(oid, rid)){
+          if (txn->IsRowExclusiveLocked(oid, rid)) {
             return 0;
           }
           break;
@@ -231,10 +229,12 @@ class LockManager {
       }
       int j = static_cast<int>(lock_mode);
       auto txn_id = txn->GetTransactionId();
-      for(auto lrq = request_queue_.begin(); lrq != request_queue_.end(); ++lrq){
-        if((*lrq)->granted_ && (*lrq)->txn_id_ == txn_id){
-          if(UPGRADE_MATRIX[static_cast<int>((*lrq)->lock_mode_)][j]){
-            if(upgrading_ != INVALID_TXN_ID){
+      for (auto lrq = request_queue_.begin(); lrq != request_queue_.end(); ++lrq) {
+        if ((*lrq)->granted_ && (*lrq)->txn_id_ == txn_id) {
+          if (UPGRADE_MATRIX[static_cast<int>((*lrq)->lock_mode_)][j]) {
+            if (upgrading_ != INVALID_TXN_ID) {
+              txn->SetState(TransactionState::ABORTED);
+              txn->UnlockTxn();
               throw TransactionAbortException(txn_id, AbortReason::UPGRADE_CONFLICT);
             }
             upgrading_ = txn_id;
@@ -254,9 +254,8 @@ class LockManager {
             request_queue_.erase(lrq);
             return 1;
           }
-          if(COMPATIBLE_MATRIX[static_cast<int>((*lrq)->lock_mode_)][j]){
-            return 2;
-          }
+          txn->SetState(TransactionState::ABORTED);
+          txn->UnlockTxn();
           throw TransactionAbortException(txn_id, AbortReason::INCOMPATIBLE_UPGRADE);
         }
       }

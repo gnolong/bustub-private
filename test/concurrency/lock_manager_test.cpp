@@ -239,6 +239,6 @@ void TwoPLTest1() {
   delete txn;
 }
 
-TEST(LockManagerTest, DISABLED_TwoPLTest1) { TwoPLTest1(); }  // NOLINT
+TEST(LockManagerTest, TwoPLTest1) { TwoPLTest1(); }  // NOLINT
 
 }  // namespace bustub
