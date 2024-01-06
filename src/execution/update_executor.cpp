@@ -26,6 +26,7 @@ void UpdateExecutor::Init() {
   table_info_ = exec_ctx_->GetCatalog()->GetTable(plan_->TableOid());
   index_info_ = exec_ctx_->GetCatalog()->GetTableIndexes(table_info_->name_);
   child_executor_->Init();
+    exec_ctx_->GetLockManager()->LockTable(exec_ctx_->GetTransaction(), LockManager::LockMode::INTENTION_EXCLUSIVE, plan_->TableOid());
 }
 
 auto UpdateExecutor::Next([[maybe_unused]] Tuple *tuple, RID *rid) -> bool {
@@ -47,6 +48,8 @@ auto UpdateExecutor::Next([[maybe_unused]] Tuple *tuple, RID *rid) -> bool {
   TupleMeta meta{INVALID_TXN_ID, INVALID_TXN_ID, false};
   not_first_call_ = true;
   do {
+
+    exec_ctx_->GetLockManager()->LockRow(exec_ctx_->GetTransaction(),LockManager::LockMode::EXCLUSIVE,plan_->TableOid(),rid_t);
     auto pair = table_info_->table_->GetTuple(rid_t);
     //   std::cout << "  update_child_tuple_rid: " << rid_t.ToString();
     //   std::cout << "  update_child_tuple: " << child_tuple.ToString(&table_info_->schema_) << '\n';
