@@ -63,7 +63,22 @@ TEST(LockManagerDeadlockDetectionTest, EdgeTest) {
   }
 }
 
-TEST(LockManagerDeadlockDetectionTest, DISABLED_BasicDeadlockDetectionTest) {
+TEST(LockManagerDeadlockDetectionTest, CycleTest1) {
+  LockManager lock_mgr{};
+  lock_mgr.AddEdge(0, 1);
+  lock_mgr.AddEdge(1, 0);
+  lock_mgr.AddEdge(2, 3);
+  lock_mgr.AddEdge(3, 4);
+  lock_mgr.AddEdge(4, 2);
+  txn_id_t txn_id;
+  lock_mgr.HasCycle(&txn_id);
+  EXPECT_EQ(1, txn_id);
+  lock_mgr.RemoveEdge(1, 0);
+  lock_mgr.HasCycle(&txn_id);
+  EXPECT_EQ(4, txn_id);
+  lock_mgr.RemoveEdge(4, 2);
+}
+TEST(LockManagerDeadlockDetectionTest, BasicDeadlockDetectionTest) {
   LockManager lock_mgr{};
   TransactionManager txn_mgr{&lock_mgr};
 
